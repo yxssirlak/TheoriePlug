@@ -1,26 +1,84 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Monument Extended";
+  src: url("/fonts/MonumentExtended-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Monument Extended";
+  src: url("/fonts/MonumentExtended-Ultrabold.otf") format("opentype");
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "TT Commons Pro";
+  src: url("/fonts/tt_commons_pro_regular.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "TT Commons Pro";
+  src: url("/fonts/tt_commons_pro_bold.otf") format("opentype");
+  font-weight: 700;
+  font-display: swap;
+}
+/* De demo-versie van TT Commons Pro heeft kapotte tekens voor & en - */
+@font-face {
+  font-family: "TT Commons Fix";
+  src: local("Arial"), local("Helvetica");
+  font-weight: 400;
+  unicode-range: U+0026, U+002D, U+2013, U+2014;
+}
+@font-face {
+  font-family: "TT Commons Fix";
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Helvetica Bold");
+  font-weight: 700;
+  unicode-range: U+0026, U+002D, U+2013, U+2014;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #18181b;
+  --foreground: #f4f4f5;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-lime: #ccff00;
+  --color-jade: #10b981;
+  --color-ink: #18181b;
+  --color-paper: #f4f4f5;
+  --color-acid: #acc80b;
+  --color-emerald: #14ad7a;
+  --font-sans: "TT Commons Fix", "TT Commons Pro", var(--font-geist-sans), sans-serif;
+  --font-display: "Monument Extended", var(--font-archivo), sans-serif;
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+.font-display {
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+
+/* Gefade hero: beeld (public/brand/hero.jpg, optioneel) lost rechts op in het donker */
+.hero-fade {
+  background:
+    linear-gradient(90deg, #18181b 0%, #18181b 30%, rgba(24, 24, 27, 0.55) 60%, rgba(24, 24, 27, 0.15) 100%),
+    linear-gradient(180deg, rgba(24, 24, 27, 0) 60%, #18181b 100%),
+    url("/brand/hero.jpg") center right / cover no-repeat,
+    radial-gradient(60% 80% at 85% 30%, rgba(16, 185, 129, 0.45), transparent 70%),
+    radial-gradient(40% 50% at 95% 80%, rgba(204, 255, 0, 0.25), transparent 70%),
+    #18181b;
+}
+
+.corner-cut {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 36px), calc(100% - 36px) 100%, 0 100%);
 }
