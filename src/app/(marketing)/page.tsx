@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import PackageButton from "./package-button";
+import PackageDropdown from "./package-dropdown";
 
 const values = [
   ["Vernieuwing", "Theorie leren zoals het nu hoort: fris, digitaal en zonder stoffige boeken."],
@@ -9,46 +11,96 @@ const values = [
   ["Toegankelijkheid", "Overal beschikbaar: op je telefoon, tablet of laptop."],
 ];
 
-const packages = [
+type PackageFeature = {
+  label: string;
+  highlight?: "jade" | "lime";
+  detail?: string;
+};
+
+type TheoryPackage = {
+  id: string;
+  name: string;
+  desc: string;
+  price: string;
+  featured?: boolean;
+  items: PackageFeature[];
+};
+
+const packages: TheoryPackage[] = [
   {
-    name: "3 Dagen",
-    desc: "Even snel opfrissen vlak voor je examen.",
-    price: "€14,99",
-    items: ["Alle theoriestof", "20 CBR oefenexamens", "Werkt op mobiel & PC"],
-  },
-  {
-    name: "1 Week",
-    desc: "De perfecte voorbereiding zonder stress.",
-    price: "€19,99",
-    featured: true,
-    items: ["Alles uit het 3-dagen pakket", "50 CBR oefenexamens", "Foutenanalyse & inzicht", "Voorrang bij support"],
-  },
-  {
-    name: "1 Maand",
-    desc: "Neem ruim de tijd om alles te leren.",
+    id: "pakket-start",
+    name: "Start",
+    desc: "Een sterke basis voor je theorie-examen.",
     price: "€29,99",
-    items: ["Alle theoriestof", "Onbeperkt oefenexamens", "Uitgebreide statistieken"],
+    items: [
+      { label: "7 dagen" },
+      { label: "3 oefenexamens", detail: "250 vragen" },
+      { label: "Videocursus" },
+      { label: "ADAS" },
+      { label: "Cheat Sheet" },
+    ],
+  },
+  {
+    id: "pakket-max",
+    name: "Max",
+    desc: "Alles in huis voor een complete voorbereiding.",
+    price: "€44,99",
+    featured: true,
+    items: [
+      { label: "1 maand" },
+      { label: "10 oefenexamens", detail: "500 vragen" },
+      { label: "Videocursus" },
+      { label: "ADAS" },
+      { label: "Cheat Sheet" },
+      { label: "1 x pauzeren" },
+      { label: "Adaptive", highlight: "lime" },
+      { label: "Flashcards", highlight: "lime" },
+    ],
+  },
+  {
+    id: "pakket-boost",
+    name: "Boost",
+    desc: "Extra oefenen en leren op jouw tempo.",
+    price: "€39,99",
+    items: [
+      { label: "14 dagen" },
+      { label: "8 oefenexamens", detail: "400 vragen" },
+      { label: "Videocursus" },
+      { label: "ADAS" },
+      { label: "Cheat Sheet" },
+      { label: "1 x pauzeren" },
+      { label: "Adaptive", highlight: "jade" },
+    ],
   },
 ];
 
 export default function LandingPage() {
   return (
     <div className="relative min-h-screen overflow-x-clip bg-ink text-paper">
-      <div className="pointer-events-none absolute inset-0 z-20 hidden lg:block" aria-hidden>
-        <Image src="/brand/sticker-car.png" alt="" width={496} height={403} style={{ transform: "translate(-50%, -50%) rotate(-18deg)" }} className="absolute left-[9%] top-[190px] w-56 drop-shadow-xl" />
-        <Image src="/brand/sticker-succes.png" alt="" width={296} height={190} style={{ transform: "translate(-50%, -50%) rotate(16deg)" }} className="absolute left-[70%] top-[455px] w-32" />
-        <Image src="/brand/sticker-warning.png" alt="" width={323} height={312} style={{ transform: "translate(-50%, -50%) rotate(-12deg)" }} className="absolute left-[13%] top-[715px] w-36" />
-        <Image src="/brand/sticker-badge.png" alt="" width={363} height={263} style={{ transform: "translate(-50%, -50%) rotate(14deg)" }} className="absolute left-[92%] top-[735px] w-28" />
-      </div>
       {/* HERO */}
-      <section className="hero-fade relative overflow-hidden">
-        <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
+      <section className="hero-fade relative overflow-visible">
+        <nav className="relative z-30 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-4 px-4 py-6 sm:px-6 lg:px-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <Link href="/">
             <Image src="/brand/logo.png" alt="TheoriePlug" width={582} height={61} priority className="h-6 sm:h-7 w-auto" />
           </Link>
+          <div className="col-span-2 row-start-2 flex flex-wrap items-center justify-center gap-x-1 gap-y-1 sm:gap-x-3 md:col-span-1 md:col-start-2 md:row-start-auto md:gap-x-2">
+            <Link href="#contact" className="rounded-full px-3 py-2 text-sm font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-base">
+              Contact
+            </Link>
+            <Link href="#over-ons" className="rounded-full px-3 py-2 text-sm font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-base">
+              Over ons
+            </Link>
+            <Link
+              href="mailto:info@theorieplug.nl?subject=Demo%20aanvragen"
+              className="rounded-full px-3 py-2 text-sm font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-base"
+            >
+              Demo
+            </Link>
+            <PackageDropdown packages={packages} />
+          </div>
           <Link
             href="/login"
-            className="border border-paper/30 px-5 py-2 rounded-full font-bold hover:bg-paper/10 transition-colors"
+            className="justify-self-end rounded-full border border-paper/30 px-4 py-2 text-sm font-bold transition-colors hover:border-lime hover:bg-lime hover:text-ink sm:px-5 sm:text-base"
           >
             Inloggen
           </Link>
@@ -59,21 +111,20 @@ export default function LandingPage() {
             Plug je kennis. <span className="text-lime">Own</span> de weg.
           </h1>
           <p className="text-xl text-paper/75 mb-10 max-w-xl">
-            Slaag in één keer voor je autotheorie. Oefen met examens die lijken op het echte CBR, inclusief
-            gevaarherkenning met de officiële 8-seconden timer.
+            Slaag in één keer voor je autotheorie. Oefen met examens die lijken op het echte CBR.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
               href="#pakketten"
               className="bg-lime text-ink px-8 py-4 rounded-full font-bold text-lg hover:brightness-95 transition"
             >
-              Bekijk theoriepakketten
+              Bekijk Demo 
             </Link>
             <Link
               href="/login"
               className="border border-paper/40 px-8 py-4 rounded-full font-bold text-lg hover:bg-paper/10 transition-colors"
             >
-              Inloggen
+              Ontdek TheoriePlug
             </Link>
           </div>
         </div>
@@ -87,7 +138,7 @@ export default function LandingPage() {
       </div>
 
       {/* WAARDEN */}
-      <section className="py-24">
+      <section id="over-ons" className="py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-12">
             Waar wij <span className="text-lime">voor staan</span>
@@ -105,47 +156,70 @@ export default function LandingPage() {
 
       {/* PAKKETTEN */}
       <section id="pakketten" className="py-24 bg-paper text-ink">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-16">
             <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-4">Kies jouw theoriepakket</h2>
             <p className="text-ink/70 text-lg">Hoeveel tijd heb je nog tot je examen? Kies het pakket dat bij je past.</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {packages.map((p) => (
               <div
                 key={p.name}
-                className={`rounded-3xl p-8 flex flex-col relative ${
+                id={p.id}
+                className={`rounded-3xl p-7 lg:p-8 flex flex-col relative ${
                   p.featured
-                    ? "bg-ink text-paper md:-translate-y-4 shadow-2xl"
-                    : "bg-white border border-ink/10"
+                    ? "border-2 border-lime bg-ink text-paper md:-translate-y-4 shadow-[0_0_32px_rgba(204,255,0,0.25),0_25px_60px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-2 hover:shadow-[0_0_48px_rgba(204,255,0,0.42),0_30px_70px_rgba(0,0,0,0.4)] md:hover:-translate-y-6"
+                    : "border-2 border-jade/50 bg-ink text-paper transition duration-300 hover:-translate-y-2 hover:border-jade hover:shadow-xl hover:shadow-jade/10"
                 }`}
               >
                 {p.featured && (
-                  <div className="absolute top-0 left-8 -translate-y-1/2 bg-lime text-ink px-4 py-1 rounded-full text-sm font-bold tracking-wide -rotate-3">
+                  <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-lime px-4 py-1 text-sm font-bold tracking-wide text-ink -rotate-3">
                     MEEST GEKOZEN
                   </div>
                 )}
                 <h3 className="font-display font-extrabold text-2xl mb-2">{p.name}</h3>
-                <p className={`mb-6 ${p.featured ? "text-paper/70" : "text-ink/60"}`}>{p.desc}</p>
-                <div className={`font-display font-extrabold text-4xl mb-6 ${p.featured ? "text-lime" : "text-emerald"}`}>
+                <div
+                  role="img"
+                  className={`relative mb-5 flex aspect-[16/7] items-end overflow-hidden rounded-2xl border ${
+                    p.featured
+                      ? "border-lime/30 bg-[radial-gradient(ellipse_at_75%_20%,rgba(204,255,0,0.3),transparent_45%),linear-gradient(120deg,#27272a,#18181b_65%)]"
+                      : "border-jade/30 bg-[radial-gradient(ellipse_at_75%_20%,rgba(16,185,129,0.3),transparent_45%),linear-gradient(120deg,#27272a,#18181b_65%)]"
+                  }`}
+                >
+                  <span className="absolute -right-6 -top-10 h-32 w-32 rounded-full border border-white/10" />
+                  <span className="absolute -right-1 -top-5 h-20 w-20 rounded-full border border-white/10" />
+                  <span className="relative m-3 rounded-full border border-white/15 bg-ink/60 px-3 py-1 text-xs font-bold uppercase tracking-wider text-paper/65 backdrop-blur-sm">
+                  </span>
+                </div>
+                <p className="mb-6 text-paper/70">{p.desc}</p>
+                <div className={`font-display font-extrabold text-4xl mb-6 ${p.featured ? "text-lime" : "text-jade"}`}>
                   {p.price}
                 </div>
                 <ul className="space-y-3 mb-8 flex-1">
-                  {p.items.map((i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className={p.featured ? "text-jade" : "text-emerald"}>✓</span>
-                      {i}
+                  {p.items.map((item) => (
+                    <li key={item.label} className="flex flex-wrap items-center gap-2">
+                      <span className="text-jade">✓</span>
+                      <span
+                        className={
+                          item.highlight === "jade"
+                            ? "rounded-full border border-jade/40 bg-gradient-to-r from-jade/10 via-jade/20 to-jade/10 px-2.5 py-0.5 font-bold text-jade shadow-[0_0_16px_rgba(16,185,129,0.35)]"
+                            : item.highlight === "lime"
+                              ? "rounded-full border border-lime/40 bg-gradient-to-r from-lime/10 via-lime/20 to-lime/10 px-2.5 py-0.5 font-bold text-lime shadow-[0_0_16px_rgba(204,255,0,0.3)]"
+                              : undefined
+                        }
+                      >
+                        {item.label}
+                      </span>
+                      {item.detail && (
+                        <span className="rounded-full border border-jade/40 bg-gradient-to-r from-jade/10 via-jade/20 to-jade/10 px-2.5 py-0.5 text-sm font-bold text-jade shadow-[0_0_16px_rgba(16,185,129,0.35)]">
+                          {item.detail}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
-                <button
-                  className={`w-full py-4 rounded-full font-bold transition ${
-                    p.featured ? "bg-lime text-ink hover:brightness-95" : "bg-ink text-paper hover:bg-ink/85"
-                  }`}
-                >
-                  Kies dit pakket
-                </button>
+                <PackageButton featured={Boolean(p.featured)} />
               </div>
             ))}
           </div>
@@ -153,7 +227,7 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="py-12 text-center text-paper/60">
+      <footer id="contact" className="py-12 text-center text-paper/60">
         <Image src="/brand/logo.png" alt="TheoriePlug" width={582} height={61} className="h-7 w-auto mx-auto mb-4" />
         <p>info@theorieplug.nl · @theorieplug · www.theorieplug.nl</p>
         <p className="mt-2">© 2026 TheoriePlug. Alle rechten voorbehouden.</p>

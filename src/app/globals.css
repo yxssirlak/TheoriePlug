@@ -82,3 +82,24 @@ body {
 .corner-cut {
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 36px), calc(100% - 36px) 100%, 0 100%);
 }
+
+@keyframes dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.package-dropdown-enter {
+  animation: dropdown-enter 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .package-dropdown-enter {
+    animation: none;
+  }
+}
