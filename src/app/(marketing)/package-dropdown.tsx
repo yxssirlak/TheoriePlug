@@ -14,10 +14,9 @@ type DropdownPackage = {
 
 export default function PackageDropdown({ packages }: { packages: DropdownPackage[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerTypeRef = useRef<string>("mouse");
   const [open, setOpen] = useState(false);
-  const [menuTop, setMenuTop] = useState(0);
 
   function cancelClose() {
     if (closeTimerRef.current) {
@@ -28,15 +27,12 @@ export default function PackageDropdown({ packages }: { packages: DropdownPackag
 
   function openMenu() {
     cancelClose();
-    if (triggerRef.current) {
-      setMenuTop(triggerRef.current.getBoundingClientRect().bottom + 8);
-    }
     setOpen(true);
   }
 
   function scheduleClose() {
     cancelClose();
-    closeTimerRef.current = setTimeout(() => setOpen(false), 180);
+    closeTimerRef.current = setTimeout(() => setOpen(false), 250);
   }
 
   useEffect(() => {
@@ -45,12 +41,6 @@ export default function PackageDropdown({ packages }: { packages: DropdownPackag
 
   useEffect(() => {
     if (!open) return;
-
-    function updateMenuPosition() {
-      if (triggerRef.current) {
-        setMenuTop(triggerRef.current.getBoundingClientRect().bottom + 8);
-      }
-    }
 
     function handlePointerDown(event: PointerEvent) {
       if (!containerRef.current?.contains(event.target as Node)) {
@@ -66,40 +56,62 @@ export default function PackageDropdown({ packages }: { packages: DropdownPackag
       }
     }
 
+    function handlePointerMove(event: PointerEvent) {
+      if (event.pointerType !== "mouse") return;
+      if (containerRef.current?.contains(event.target as Node)) {
+        cancelClose();
+      } else if (!closeTimerRef.current) {
+        closeTimerRef.current = setTimeout(() => setOpen(false), 250);
+      }
+    }
+
+    function handleScroll() {
+      if (pointerTypeRef.current !== "mouse") return;
+      cancelClose();
+      setOpen(false);
+    }
+
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("resize", updateMenuPosition);
-    window.addEventListener("scroll", updateMenuPosition, true);
+    document.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("resize", updateMenuPosition);
-      window.removeEventListener("scroll", updateMenuPosition, true);
+      document.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, [open]);
 
   return (
     <div
       ref={containerRef}
-      className="relative"
-      onMouseEnter={openMenu}
-      onMouseLeave={scheduleClose}
+      className="-my-6 py-6"
+      onPointerEnter={(event) => {
+        pointerTypeRef.current = event.pointerType;
+        if (event.pointerType === "mouse") openMenu();
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") scheduleClose();
+      }}
     >
       <button
-        ref={triggerRef}
         type="button"
         aria-expanded={open}
         aria-controls="theoriepakketten-menu"
+        onPointerDown={(event) => {
+          pointerTypeRef.current = event.pointerType;
+        }}
         onClick={() => {
-          if (open) {
+          if (!open) {
+            openMenu();
+          } else if (pointerTypeRef.current !== "mouse") {
             cancelClose();
             setOpen(false);
-          } else {
-            openMenu();
           }
         }}
-        className={`flex cursor-pointer items-center gap-1 rounded-full px-3 py-2 text-sm font-bold transition-colors sm:text-base ${
+        className={`flex cursor-pointer items-center gap-1 rounded-full px-3 py-2 text-base font-bold transition-colors sm:text-lg lg:px-4 lg:text-xl ${
           open ? "bg-paper/10 text-lime" : "hover:bg-paper/10 hover:text-lime"
         }`}
       >
@@ -108,28 +120,32 @@ export default function PackageDropdown({ packages }: { packages: DropdownPackag
           aria-hidden="true"
           viewBox="0 0 20 20"
           fill="none"
-          className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 lg:h-5 lg:w-5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         >
           <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
-      {open && (
-        <div
-          id="theoriepakketten-menu"
-          style={{ top: menuTop, left: 0 }}
-          onMouseEnter={cancelClose}
-          onMouseLeave={scheduleClose}
-          className="package-dropdown-enter fixed z-50 w-full border-y border-white/15 bg-ink/85 px-4 py-4 text-paper shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:px-8 sm:py-5 lg:px-12"
-        >
-          <div className="mx-auto mb-3 flex max-w-7xl flex-wrap items-center justify-between gap-2 px-1">
+      <div
+        id="theoriepakketten-menu"
+        inert={!open ? true : undefined}
+        aria-hidden={!open}
+        data-open={open}
+        className={`package-dropdown absolute inset-x-0 top-full z-50 border-y border-white/15 bg-ink/85 px-4 py-4 text-paper shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:px-8 sm:py-5 lg:px-12 transition-all duration-200 ease-out ${
+          open 
+            ? "visible opacity-100 translate-y-0" 
+            : "invisible opacity-0 -translate-y-2 pointer-events-none"
+        }`}
+      >
+        <span aria-hidden="true" className="absolute inset-x-0 -top-10 h-10" />
+        <div className="mx-auto mb-3 flex max-w-7xl flex-wrap items-center justify-between gap-2 px-1">
             <div>
-              <h2 className="font-display text-base font-extrabold sm:text-lg">Kies jouw pakket</h2>
+              <h2 className="font-display text-lg font-extrabold sm:text-xl">Kies jouw pakket</h2>
             </div>
             <Link
               href="#pakketten"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold text-paper/65 transition-colors hover:text-lime"
+              className="rounded-full bg-jade px-5 py-2 text-base font-bold text-ink shadow-[0_0_18px_rgba(16,185,129,0.35)] transition hover:brightness-110 hover:shadow-[0_0_28px_rgba(16,185,129,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jade focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
             >
               Vergelijk alle pakketten <span aria-hidden="true">→</span>
             </Link>
@@ -149,16 +165,16 @@ export default function PackageDropdown({ packages }: { packages: DropdownPackag
               >
                 <span className="min-w-0">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className={`font-display text-lg font-extrabold transition-colors group-hover/card:text-lime ${item.featured ? "text-lime" : "text-paper"}`}>
+                    <span className={`font-display text-xl font-extrabold transition-colors group-hover/card:text-lime ${item.featured ? "text-lime" : "text-paper"}`}>
                       {item.name}
                     </span>
                     {item.featured && (
-                      <span className="rounded-full bg-lime px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-ink">
+                      <span className="rounded-full bg-lime px-2 py-0.5 text-xs font-extrabold tracking-wide text-ink">
                         MEEST GEKOZEN
                       </span>
                     )}
                   </span>
-                  <span className="mt-1 block text-xs text-paper/60 sm:text-sm">
+                  <span className="mt-1 block text-sm text-paper/60 sm:text-base">
                     {item.items.find((feature) => feature.label.includes("dagen") || feature.label.includes("maand"))?.label}
                     {" · "}
                     {item.items.find((feature) => feature.detail)?.label}
@@ -170,18 +186,17 @@ export default function PackageDropdown({ packages }: { packages: DropdownPackag
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className={`block font-display text-lg font-extrabold ${item.featured ? "text-lime" : "text-jade"}`}>
+                  <span className={`block font-display text-xl font-extrabold ${item.featured ? "text-lime" : "text-jade"}`}>
                     {item.price}
                   </span>
-                  <span className="text-xs font-bold text-paper/45 transition-colors group-hover/card:text-paper/80">
+                  <span className="text-sm font-bold text-paper/45 transition-colors group-hover/card:text-paper/80">
                     Bekijk →
                   </span>
                 </span>
               </Link>
             ))}
           </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

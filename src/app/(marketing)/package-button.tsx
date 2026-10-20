@@ -32,7 +32,7 @@ export default function PackageButton({ featured }: PackageButtonProps) {
       onPointerMove={handlePointerMove}
       onPointerLeave={resetPosition}
       style={{ transform: "translate3d(var(--magnetic-x, 0px), var(--magnetic-y, 0px), 0)" }}
-      className={`group relative isolate w-full overflow-hidden rounded-full py-4 font-bold transition-[transform,box-shadow,background-color,border-color,color] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-ink motion-reduce:transition-none ${
+      className={`group relative isolate w-full overflow-hidden rounded-full py-4 text-lg font-bold transition-[transform,box-shadow,background-color,border-color,color] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-ink motion-reduce:transition-none ${
         featured
           ? "bg-lime text-ink shadow-[0_0_18px_rgba(204,255,0,0.2)] hover:shadow-[0_0_30px_rgba(204,255,0,0.55)]"
           : "border border-paper/30 bg-paper/10 text-paper hover:border-jade hover:bg-jade hover:text-ink hover:shadow-[0_0_24px_rgba(16,185,129,0.4)]"

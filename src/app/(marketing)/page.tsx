@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import FeatureMarquee from "./feature-marquee";
 import PackageButton from "./package-button";
 import PackageDropdown from "./package-dropdown";
 
@@ -79,20 +80,20 @@ export default function LandingPage() {
     <div className="relative min-h-screen overflow-x-clip bg-ink text-paper">
       {/* HERO */}
       <section className="hero-fade relative overflow-visible">
-        <nav className="relative z-30 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-4 px-4 py-6 sm:px-6 lg:px-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <nav className="relative z-30 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-4 px-4 py-6 sm:px-10 lg:px-16 xl:px-24 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <Link href="/">
-            <Image src="/brand/logo.png" alt="TheoriePlug" width={582} height={61} priority className="h-6 sm:h-7 w-auto" />
+            <Image src="/brand/logo.png" alt="TheoriePlug" width={582} height={61} priority className="h-7 sm:h-8 lg:h-9 w-auto" />
           </Link>
           <div className="col-span-2 row-start-2 flex flex-wrap items-center justify-center gap-x-1 gap-y-1 sm:gap-x-3 md:col-span-1 md:col-start-2 md:row-start-auto md:gap-x-2">
-            <Link href="#contact" className="rounded-full px-3 py-2 text-sm font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-base">
+            <Link href="#contact" className="rounded-full px-3 py-2 text-base font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-lg lg:px-4 lg:text-xl">
               Contact
             </Link>
-            <Link href="#over-ons" className="rounded-full px-3 py-2 text-sm font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-base">
+            <Link href="#over-ons" className="rounded-full px-3 py-2 text-base font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-lg lg:px-4 lg:text-xl">
               Over ons
             </Link>
             <Link
               href="mailto:info@theorieplug.nl?subject=Demo%20aanvragen"
-              className="rounded-full px-3 py-2 text-sm font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-base"
+              className="rounded-full px-3 py-2 text-base font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-lg lg:px-4 lg:text-xl"
             >
               Demo
             </Link>
@@ -100,54 +101,51 @@ export default function LandingPage() {
           </div>
           <Link
             href="/login"
-            className="justify-self-end rounded-full border border-paper/30 px-4 py-2 text-sm font-bold transition-colors hover:border-lime hover:bg-lime hover:text-ink sm:px-5 sm:text-base"
+            className="justify-self-end rounded-full border border-paper/30 px-4 py-2 text-base font-bold transition-colors hover:border-lime hover:bg-lime hover:text-ink sm:px-5 sm:text-lg lg:text-xl"
           >
             Inloggen
           </Link>
         </nav>
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-40 md:pt-28 md:pb-52">
-          <h1 className="font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl leading-[1.05] max-w-3xl mb-6">
+        <div className="relative px-4 sm:px-10 lg:px-16 xl:px-24 pt-32 pb-16 md:pt-48 md:pb-24">
+          <h1 className="font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.05] max-w-3xl xl:max-w-4xl mb-6">
             Plug je kennis. <span className="text-lime">Own</span> de weg.
           </h1>
-          <p className="text-xl text-paper/75 mb-10 max-w-xl">
+          <p className="text-lg sm:text-xl lg:text-2xl text-paper/75 mb-10 max-w-xl lg:max-w-2xl">
             Slaag in één keer voor je autotheorie. Oefen met examens die lijken op het echte CBR.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
               href="#pakketten"
-              className="bg-lime text-ink px-8 py-4 rounded-full font-bold text-lg hover:brightness-95 transition"
+              className="bg-lime text-ink px-8 py-4 rounded-full font-bold text-base sm:text-lg lg:text-xl hover:brightness-95 transition"
             >
               Bekijk Demo 
             </Link>
             <Link
               href="/login"
-              className="border border-paper/40 px-8 py-4 rounded-full font-bold text-lg hover:bg-paper/10 transition-colors"
+              className="border border-paper/40 px-8 py-4 rounded-full font-bold text-base sm:text-lg lg:text-xl hover:bg-paper/10 transition-colors"
             >
               Ontdek TheoriePlug
             </Link>
           </div>
+          <FeatureMarquee />
         </div>
       </section>
-
-      {/* SLOGAN BLOK */}
-      <div className="relative z-10 -mt-16 px-4">
-        <div className="relative max-w-3xl mx-auto bg-lime text-ink -rotate-2 px-8 py-6 text-center font-display font-extrabold text-xl md:text-3xl shadow-xl">
-          Plug je kennis. Own de weg.
-        </div>
-      </div>
 
       {/* WAARDEN */}
       <section id="over-ons" className="py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-12">
+          <h2 className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl mb-6">
             Waar wij <span className="text-lime">voor staan</span>
           </h2>
+          <div className="mb-12 max-w-3xl -rotate-2 bg-lime px-5 py-4 text-center font-display text-xl font-extrabold text-ink shadow-xl sm:px-8 sm:text-2xl lg:text-3xl">
+            Plug je kennis. Own de weg.
+          </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {values.map(([title, text]) => (
               <div key={title} className="corner-cut bg-lime text-ink p-8 pb-12">
-                <h3 className="font-display font-extrabold text-lg mb-3">{title}</h3>
-                <p className="font-medium">{text}</p>
+                <h3 className="font-display font-extrabold text-xl lg:text-2xl mb-3">{title}</h3>
+                <p className="text-base lg:text-lg font-medium">{text}</p>
               </div>
             ))}
           </div>
@@ -158,8 +156,8 @@ export default function LandingPage() {
       <section id="pakketten" className="py-24 bg-paper text-ink">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-16">
-            <h2 className="font-display font-extrabold text-3xl md:text-4xl mb-4">Kies jouw theoriepakket</h2>
-            <p className="text-ink/70 text-lg">Hoeveel tijd heb je nog tot je examen? Kies het pakket dat bij je past.</p>
+            <h2 className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl mb-4">Kies jouw theoriepakket</h2>
+            <p className="text-ink/70 text-lg lg:text-xl">Hoeveel tijd heb je nog tot je examen? Kies het pakket dat bij je past.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -174,11 +172,11 @@ export default function LandingPage() {
                 }`}
               >
                 {p.featured && (
-                  <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-lime px-4 py-1 text-sm font-bold tracking-wide text-ink -rotate-3">
+                  <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-lime px-4 py-1 text-base font-bold tracking-wide text-ink -rotate-3">
                     MEEST GEKOZEN
                   </div>
                 )}
-                <h3 className="font-display font-extrabold text-2xl mb-2">{p.name}</h3>
+                <h3 className="font-display font-extrabold text-2xl lg:text-3xl mb-2">{p.name}</h3>
                 <div
                   role="img"
                   className={`relative mb-5 flex aspect-[16/7] items-end overflow-hidden rounded-2xl border ${
@@ -192,11 +190,11 @@ export default function LandingPage() {
                   <span className="relative m-3 rounded-full border border-white/15 bg-ink/60 px-3 py-1 text-xs font-bold uppercase tracking-wider text-paper/65 backdrop-blur-sm">
                   </span>
                 </div>
-                <p className="mb-6 text-paper/70">{p.desc}</p>
-                <div className={`font-display font-extrabold text-4xl mb-6 ${p.featured ? "text-lime" : "text-jade"}`}>
+                <p className="mb-6 text-lg text-paper/70">{p.desc}</p>
+                <div className={`font-display font-extrabold text-4xl lg:text-5xl mb-6  ${p.featured ? "text-lime" : "text-jade"}`}>
                   {p.price}
                 </div>
-                <ul className="space-y-3 mb-8 flex-1">
+                <ul className="space-y-3 mb-8 flex-1 text-lg">
                   {p.items.map((item) => (
                     <li key={item.label} className="flex flex-wrap items-center gap-2">
                       <span className="text-jade">✓</span>
@@ -212,7 +210,7 @@ export default function LandingPage() {
                         {item.label}
                       </span>
                       {item.detail && (
-                        <span className="rounded-full border border-jade/40 bg-gradient-to-r from-jade/10 via-jade/20 to-jade/10 px-2.5 py-0.5 text-sm font-bold text-jade shadow-[0_0_16px_rgba(16,185,129,0.35)]">
+                        <span className="rounded-full border border-jade/40 bg-gradient-to-r from-jade/10 via-jade/20 to-jade/10 px-2.5 py-0.5 text-base font-bold text-jade shadow-[0_0_16px_rgba(16,185,129,0.35)]">
                           {item.detail}
                         </span>
                       )}
