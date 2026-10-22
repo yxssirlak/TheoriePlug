@@ -152,7 +152,6 @@ body {
 
 @layer utilities {
   .animate-marquee {
-    /* Hier beheer je de snelheid. 60s is rustig. */
     animation: marquee 200s linear infinite;
   }
 }
