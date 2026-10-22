@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Archivo } from "next/font/google";
+import SmoothScroll from "../components/SmoothScroll";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,15 +23,22 @@ const archivo = Archivo({
 export const metadata: Metadata = {
   title: "TheoriePlug — Plug je kennis. Own de weg.",
   description: "Oefen autotheorie met CBR-achtige examens en gevaarherkenning.",
+  icons: {
+    icon: "/brand/png/svg/logo-upright-b-limoen-tegel.svg",
+  },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: any) {
   return (
     <html
       lang="nl"
       className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SmoothScroll>
+          {children}
+        </SmoothScroll>
+      </body>
     </html>
   );
 }

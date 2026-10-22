@@ -4,10 +4,10 @@ import Image from "next/image";
 import { useRef, type PointerEvent } from "react";
 
 const features = [
-  { icon: "/brand/sticker-pin.png", title: "De nieuwste vragen én antwoorden", text: "Oefen met actuele theorie" },
-  { icon: "/brand/sticker-car.png", title: "Vragen? We helpen je verder", text: "Onze theorie-experts staan voor je klaar" },
-  { icon: "/brand/sticker-badge.png", title: "Meer dan 550.000 geslaagde kandidaten", text: "Zet vandaag de eerste stap" },
-  { icon: "/brand/sticker-succes.png", title: "Plug je kennis. Own de weg.", text: "Bereid je goed voor op je theorie" },
+  { icon: "/brand/png/svg/sticker-pin.svg", title: "De nieuwste vragen én antwoorden", text: "Oefen met actuele theorie" },
+  { icon: "/brand/png/svg/sticker-car.svg", title: "Vragen? We helpen je verder", text: "Onze theorie-experts staan voor je klaar" },
+  { icon: "/brand/png/svg/sticker-badge.svg", title: "Meer dan 550.000 geslaagde kandidaten", text: "Zet vandaag de eerste stap" },
+  { icon: "/brand/png/svg/sticker-succes.svg", title: "Plug je kennis. Own de weg.", text: "Bereid je goed voor op je theorie" },
 ];
 
 export default function FeatureMarquee() {
@@ -45,7 +45,7 @@ export default function FeatureMarquee() {
           >
             {features.map((feature) => (
               <div key={feature.title} className="flex items-center gap-5">
-                <Image src={feature.icon} alt="" width={80} height={80} className="h-16 w-16 object-contain sm:h-20 sm:w-20" />
+                <Image src={feature.icon} alt="" width={80} height={80} className="h-20 w-20 object-contain sm:h-24 sm:w-24" />
                 <p className="min-w-72 text-base leading-tight text-paper/80 lg:text-lg">
                   <strong className="block text-lg text-paper lg:text-xl">{feature.title}</strong>
                   {feature.text}
