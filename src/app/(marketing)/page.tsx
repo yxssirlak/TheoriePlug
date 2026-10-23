@@ -7,6 +7,9 @@ import { motion, Variants, AnimatePresence, useScroll, useSpring } from "framer-
 import FeatureMarquee from "./feature-marquee";
 import PackageButton from "./package-button";
 import PackageDropdown from "./package-dropdown";
+import RoadmapSteps from "./roadmap-steps";
+
+
 
 // --- BESTAANDE DATA ---
 const values = [
@@ -80,12 +83,6 @@ const packages: TheoryPackage[] = [
   },
 ];
 
-const steps = [
-  { num: "01", title: "Kijk & Leer", text: "Korte, pakkende video's die de stof in jip-en-janneketaal uitleggen.", sticker: null },
-  { num: "02", title: "Oefen CBR-stijl", text: "Maak proefexamens die er precies zo uitzien én voelen als het echte examen.", sticker: "sticker-warning.svg" },
-  { num: "03", title: "Own de Weg", text: "Loop met vertrouwen de examenzaal in en haal in één keer je theorie.", sticker: "sticker-rijbewijs.svg" },
-];
-
 const reviews = [
   { name: "Sarah de Vries", text: "Na 2 keer zakken uit boeken eindelijk geslaagd! De proefexamens lijken écht op het CBR.", rating: 5 },
   { name: "Kevin", text: "Super chill om gewoon op je tel te oefenen in de trein. Video's zijn duidelijk.", rating: 5 },
@@ -125,6 +122,7 @@ const floatAnimation: any = {
     ease: "easeInOut"
   }
 };
+
 // --- FAQ COMPONENT ---
 const FAQItem = ({ question, answer }: { question: string; answer: string }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -146,6 +144,8 @@ const FAQItem = ({ question, answer }: { question: string; answer: string }) => 
     </div>
   );
 };
+
+
 
 export default function LandingPage() {
   const { scrollYProgress } = useScroll();
@@ -185,12 +185,7 @@ export default function LandingPage() {
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative px-4 sm:px-10 lg:px-16 xl:px-24 pt-32 pb-16 md:pt-32 md:pb-20">
           
           {/* HERO STICKERS */}
-          <motion.div animate={floatAnimation} className="absolute top-16 right-[15%] md:right-[20%] xl:right-[30%] w-32 md:w-44 opacity-90 pointer-events-none z-10 rotate-12 hidden sm:block">
-             <Image src="/brand/png/svg/sticker-badge.svg" alt="" width={400} height={400} className="w-full h-auto drop-shadow-2xl" />
-          </motion.div>
-          <motion.div animate={{ y: [-3, 3, -3], rotate: [-10, -6, -10], transition: { duration: 5, repeat: Infinity, ease: "easeInOut" } }} className="absolute bottom-24 right-4 md:right-16 lg:right-32 w-36 md:w-48 opacity-80 pointer-events-none z-10 hidden sm:block">
-             <Image src="/brand/png/svg/sticker-car.svg" alt="" width={400} height={400} className="w-full h-auto drop-shadow-2xl" />
-          </motion.div>
+
 
           <motion.h1 variants={itemVariants} className="font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.05] max-w-3xl xl:max-w-4xl mb-6 relative z-20">
             Plug je kennis. <span className="text-lime">Own</span> de weg.
@@ -203,7 +198,7 @@ export default function LandingPage() {
               Bekijk Pakketten
             </Link>
             <Link href="#platform" className="border border-paper/40 px-8 py-4 rounded-full font-bold text-base sm:text-lg lg:text-xl hover:bg-paper/10 transition-colors active:scale-95">
-              Ontdek TheoriePlug
+              Probeer Demo
             </Link>
           </motion.div>
           <motion.div variants={itemVariants} className="relative z-20">
@@ -213,71 +208,84 @@ export default function LandingPage() {
       </section>
 
       {/* PLATFORM SNEAK PEEK */}
-      <section id="platform" className="py-12 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 60 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative aspect-video w-full rounded-2xl sm:rounded-[2rem] border border-white/10 bg-ink overflow-hidden shadow-[0_0_100px_rgba(204,255,0,0.15)] flex items-center justify-center group cursor-pointer"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-lime/10 to-jade/10 opacity-50 group-hover:opacity-100 transition-opacity duration-700" />
-            <div className="z-10 text-center">
-               <div className="h-20 w-20 mx-auto rounded-full bg-lime/20 flex items-center justify-center backdrop-blur-md border border-lime/30 group-hover:scale-110 transition-transform duration-500">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="text-lime translate-x-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-               </div>
-               <p className="mt-4 font-display font-bold text-xl text-lime tracking-wide">Bekijk het platform</p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+<section id="platform" className="py-24 sm:py-32 relative overflow-hidden">
+  {/* Gebruik w-full en padding links om hem strak tegen de kant te plaatsen */}
+  <div className="w-full pl-4 sm:pl-6 lg:pl-12 pr-4 sm:pr-6 lg:pr-12 relative z-10">
+    <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      
+      {/* Video / Sneak Peek Links (strak uitgelijnd aan de linkerzijde) */}
+      <div className="lg:col-span-7">
+        <motion.div 
+          initial={{ opacity: 0, y: 60 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: "-100px" }} 
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative aspect-video w-full rounded-2xl sm:rounded-[2rem] border border-white/10 bg-ink overflow-hidden shadow-[0_0_100px_rgba(204,255,0,0.15)] flex items-center justify-center group cursor-pointer"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-lime/10 to-jade/10 opacity-50 group-hover:opacity-100 transition-opacity duration-700" />
+          <div className="z-10 text-center">
+             <div className="h-20 w-20 mx-auto rounded-full bg-lime/20 flex items-center justify-center backdrop-blur-md border border-lime/30 group-hover:scale-110 transition-transform duration-500">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="text-lime translate-x-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+             </div>
+             <p className="mt-4 font-display font-bold text-xl text-lime tracking-wide">Bekijk het platform</p>
+          </div>
+        </motion.div>
+      </div>
 
-      {/* HOE HET WERKT (STAPPENPLAN) */}
-      <section className="py-24 bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.05),transparent_50%)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeUpVariants} className="text-center mb-16 relative">
-            <h2 className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl mb-4">In 3 stappen naar je <span className="text-jade">rijbewijs</span></h2>
-            <p className="text-paper/70 text-lg lg:text-xl max-w-2xl mx-auto">Geen saaie boeken, maar een slim systeem dat jou voorbereidt op het échte werk.</p>
-          </motion.div>
-          
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={containerVariants} className="grid md:grid-cols-3 gap-8 lg:gap-12 relative">
-            <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-0.5 bg-gradient-to-r from-jade/0 via-jade/30 to-jade/0 -z-10" />
-            
-            {steps.map((step, i) => (
-              <motion.div key={step.num} variants={itemVariants} className="relative text-center pt-8">
-                
-                {/* STAPPEN STICKERS */}
-                {step.sticker && (
-                  <motion.div animate={floatAnimation} className="absolute -top-8 -right-6 w-28 h-28 pointer-events-none drop-shadow-xl z-20">
-                     <Image src={`/brand/png/svg/${step.sticker}`} alt="" width={200} height={200} className="w-full h-auto" />
-                  </motion.div>
-                )}
+      {/* Tekst Rechts */}
+      <div className="lg:col-span-5 text-left pr-4 lg:pr-12">
+        <motion.div
+          initial={{ opacity: 0, x: 40 }} 
+          whileInView={{ opacity: 1, x: 0 }} 
+          viewport={{ once: true, margin: "-100px" }} 
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+        >
 
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-8xl font-display font-black text-paper/5 select-none -z-10">{step.num}</div>
-                <div className="h-16 w-16 mx-auto bg-ink border-2 border-jade rounded-full flex items-center justify-center font-display font-bold text-2xl text-jade mb-6 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                  {i + 1}
-                </div>
-                <h3 className="font-display font-extrabold text-2xl mb-3">{step.title}</h3>
-                <p className="text-paper/70 text-lg">{step.text}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+          <h2 className="text-3xl sm:text-4xl font-display font-bold text-white tracking-tight mb-4">
+            Ervaar hoe het werkt
+          </h2>
+          <p className="text-gray-400 leading-relaxed mb-6">
+            Neem een kijkje in ons platform en ontdek hoe onze slimme oefenexamens, actuele theorie en realistische simulaties jou helpen om in één keer te slagen voor je examen.
+          </p>
+          <ul className="space-y-3 text-gray-300 text-sm font-medium">
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-lime" /> Levensechte CBR-examenomgeving
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-lime" /> Directe feedback op je fouten
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-lime" /> Oefen waar en wanneer je wilt
+            </li>
+          </ul>
+        </motion.div>
+      </div>
 
-      {/* WAARDEN - Scroll geanimeerd */}
+    </div>
+  </div>
+</section>
+      {/* DE RIJDENDE AUTO STAPPEN SECTIE (Vervangt de oude statische 3 stappen) */}
+      <RoadmapSteps />
+
+  
+
+      {/* WAARDEN - Scroll geanimeerd & Links uitgelijnd */}
       <section id="over-ons" className="py-24 overflow-hidden bg-ink">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.h2 initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUpVariants} className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl mb-6">
-            Waar wij <span className="text-lime">voor staan</span>
-          </motion.h2>
-          
-          <motion.div initial={{ opacity: 0, rotate: -6, scale: 0.9 }} whileInView={{ opacity: 1, rotate: -2, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", bounce: 0.5, duration: 0.8, delay: 0.2 }} className="mb-12 max-w-3xl bg-lime px-5 py-4 text-center font-display text-xl font-extrabold text-ink shadow-xl sm:px-8 sm:text-2xl lg:text-3xl relative">
-             <motion.div animate={floatAnimation} className="absolute -top-12 -right-12 w-28 pointer-events-none drop-shadow-xl z-20">
-                <Image src="/brand/png/svg/sticker-geslaagd.svg" alt="" width={200} height={200} className="w-full h-auto rotate-12" />
-             </motion.div>
-            Plug je kennis. Own de weg.
-          </motion.div>
+        <div className="px-4 sm:px-10 lg:px-16 xl:px-24">
+          <div className="mb-12 flex flex-col items-start text-left">
+            <motion.h2 initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUpVariants} className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl mb-6">
+              Waar wij <span className="text-lime">voor staan</span>
+            </motion.h2>
+            
+            <motion.div initial={{ opacity: 0, rotate: -6, scale: 0.9 }} whileInView={{ opacity: 1, rotate: -2, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", bounce: 0.5, duration: 0.8, delay: 0.2 }} className="inline-block bg-lime px-5 py-4 text-left font-display text-xl font-extrabold text-ink shadow-xl sm:px-8 sm:text-2xl lg:text-3xl relative">
+               <motion.div animate={floatAnimation} className="absolute -top-12 -right-12 w-28 pointer-events-none drop-shadow-xl z-20">
+                  <Image src="/brand/png/svg/sticker-geslaagd.svg" alt="" width={200} height={200} className="w-full h-auto rotate-12" />
+               </motion.div>
+              Plug je kennis. Own de weg.
+            </motion.div>
+          </div>
 
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={containerVariants} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={containerVariants} className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {values.map(([title, text]) => (
               <motion.div key={title} variants={itemVariants} whileHover={{ y: -5 }} className="corner-cut bg-lime text-ink p-8 pb-12 transition-shadow hover:shadow-2xl hover:shadow-lime/20">
                 <h3 className="font-display font-extrabold text-xl lg:text-2xl mb-3">{title}</h3>
