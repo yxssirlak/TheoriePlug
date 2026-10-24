@@ -17,6 +17,9 @@ import {
   useMotionValueEvent,
 } from "framer-motion";
 import Image from "next/image";
+import dynamic from "next/dynamic";
+import type { CarState } from "./Car3D";
+const Car3D = dynamic(() => import("./Car3D"), { ssr: false });
 
 /* ==========================================================================
    CONFIG — hier kun je alles makkelijk aanpassen
@@ -25,7 +28,9 @@ import Image from "next/image";
 // Gekozen logo: "los-limoen" (variant C). Geen tegel-achtergrond, dus het ligt
 // direct op de donkere motorkap, en het limoen (#ccff00) heeft daar het
 // maximale contrast. Pas het pad aan naar waar het bestand bij jou staat.
-const LOGO_SRC = "/brand/png/svg/logo-upright-c-los-limoen.svg";
+
+
+const LOGO_SRC = "/brand/png/svg/logo-upright-d-los-groen.svg";
 
 const LIME = "#ccff00";
 const JADE = "#10b981";
@@ -438,8 +443,8 @@ function AudiA3Top({
           href={LOGO_SRC}
           x={-10.5}
           y={-52}
-          width={21}
-          height={21}
+          width={30}
+          height={30}
           preserveAspectRatio="xMidYMid meet"
           style={{ filter: "drop-shadow(0 0 1.4px rgba(204,255,0,0.55))" }}
         />
@@ -758,6 +763,7 @@ export default function RoadmapSteps() {
   const mobLineRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const carRef = useRef<SVGGElement>(null);
+  const carWrapRef = useRef<HTMLDivElement>(null);
   const wheelLRef = useRef<SVGGElement>(null);
   const wheelRRef = useRef<SVGGElement>(null);
   const deskCardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -833,10 +839,13 @@ export default function RoadmapSteps() {
   /* ---- Auto positioneren + lichten bepalen ---- */
   const updateCar = useCallback((progress: number) => {
     const p = Math.min(Math.max(progress, 0), 1);
+    if (carWrapRef.current) {
+  carWrapRef.current.style.opacity = String(Math.min(1, p / 0.04));
+}
     const path = pathRef.current;
     const car = carRef.current;
 
-    if (path && car) {
+    if (path) {
       const total = path.getTotalLength();
       const len = p * total;
       const pt = path.getPointAtLength(len);
@@ -845,11 +854,6 @@ export default function RoadmapSteps() {
       const heading =
         Math.atan2(ahead.y - back.y, ahead.x - back.x) * (180 / Math.PI);
 
-      // Neus van de auto wijst in lokale coördinaten omhoog => +90°
-      car.setAttribute(
-        "transform",
-        `translate(${pt.x.toFixed(2)} ${pt.y.toFixed(2)}) rotate(${(heading + 90).toFixed(2)})`
-      );
 
       // Voorwielen sturen mee met de bocht
       const span = Math.min(STEER_SPAN, len, total - len);
@@ -864,6 +868,10 @@ export default function RoadmapSteps() {
         while (d < -180) d += 360;
         steer = Math.max(-26, Math.min(26, d * 0.9));
       }
+      carState.current.x = pt.x;
+carState.current.y = pt.y;
+carState.current.heading = heading;
+carState.current.steer = steer;
 
 
 
@@ -888,8 +896,7 @@ export default function RoadmapSteps() {
 
 
 
-            wheelLRef.current?.setAttribute("transform", `rotate(${steer.toFixed(1)} -24.5 -35)`);
-      wheelRRef.current?.setAttribute("transform", `rotate(${steer.toFixed(1)} 24.5 -35)`);
+
     }
 
     const stops = stopFracs.current;
@@ -941,6 +948,16 @@ export default function RoadmapSteps() {
     "top-[40%] right-0", // Stap 2: rechts midden
     "bottom-[2%] left-0", // Stap 3: links onder
   ];
+
+  const carState = useRef<CarState>({
+  x: 500, y: 60, heading: 90, steer: 0,
+  headlights: false, drive: "idle", parked: false,
+});
+useEffect(() => {
+  carState.current.headlights = headlights;
+  carState.current.parked = parked;
+  carState.current.drive = drive;
+}, [headlights, parked, drive]);
 
   return (
 
@@ -996,12 +1013,12 @@ export default function RoadmapSteps() {
               <path ref={pathRef} d={ROAD_PATH} fill="none" stroke="none" />
 
               {/* Asfalt met witte kantlijnen */}
-              <path d={ROAD_PATH} stroke="#2a2d33" strokeWidth={86} strokeLinecap="round" />
+              <path d={ROAD_PATH} stroke="#787c8393" strokeWidth={86} strokeLinecap="round" />
               <path d={ROAD_PATH} stroke="#14161a" strokeWidth={80} strokeLinecap="round" />
               {/* Middenstreep */}
               <path
                 d={ROAD_PATH}
-                stroke="rgba(255,255,255,0.3)"
+                stroke="rgba(255, 255, 255, 0.53)"
                 strokeWidth={2.5}
                 strokeDasharray="14 18"
               />
@@ -1037,75 +1054,7 @@ export default function RoadmapSteps() {
                 {/* bandenstopper */}
                 <rect x={482} y={894} width={36} height={5} rx={2} fill="#52525b" />
 
-                {/* Blauw P-bord met CBR-plaatje */}
-                <g transform="translate(554 782)">
-                  <rect x={17} y={42} width={4} height={28} rx={2} fill="#52525b" />
-                  <rect
-                    x={0}
-                    y={0}
-                    width={38}
-                    height={38}
-                    rx={6}
-                    fill="#1e40af"
-                    stroke="#fff"
-                    strokeWidth={2.5}
-                  />
-                  <text
-                    x={19}
-                    y={29}
-                    textAnchor="middle"
-                    fontSize={27}
-                    fontWeight={800}
-                    fill="#fff"
-                    fontFamily="Arial, Helvetica, sans-serif"
-                  >
-                    P
-                  </text>
-                  <rect
-                    x={-9}
-                    y={43}
-                    width={56}
-                    height={20}
-                    rx={4}
-                    fill="#0f172a"
-                    stroke="rgba(255,255,255,0.75)"
-                    strokeWidth={1.5}
-                  />
-                  <text
-                    x={19}
-                    y={57.5}
-                    textAnchor="middle"
-                    fontSize={12.5}
-                    fontWeight={800}
-                    letterSpacing={2}
-                    fill="#fff"
-                    fontFamily="Arial, Helvetica, sans-serif"
-                  >
-                    CBR
-                  </text>
-                </g>
 
-                {/* "GESLAAGD!" pop-up */}
-                <motion.g
-                  initial={false}
-                  animate={{ opacity: parked ? 1 : 0, scale: parked ? 1 : 0.6 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                  style={{ transformBox: "fill-box", transformOrigin: "center" }}
-                >
-                  <rect x={546} y={738} width={108} height={28} rx={14} fill={LIME} />
-                  <text
-                    x={600}
-                    y={757}
-                    textAnchor="middle"
-                    fontSize={13}
-                    fontWeight={800}
-                    letterSpacing={1.5}
-                    fill="#0a0a0b"
-                    className="font-display"
-                  >
-                    GESLAAGD!
-                  </text>
-                </motion.g>
               </g>
 
               {/* Groene voortgangslijn (zoals voorheen) */}
@@ -1119,19 +1068,16 @@ export default function RoadmapSteps() {
                   filter: "drop-shadow(0 0 12px rgba(16, 185, 129, 0.8))",
                 }}
               />
-
-              {/* ---------- DE AUDI A3 ---------- */}
-              <g ref={carRef} transform="translate(500 60) rotate(180)">
-                <AudiA3Top
-                  headlights={headlights}
-                  drive={drive}
-                  parked={parked}
-                  wheelLRef={wheelLRef}
-                  wheelRRef={wheelRRef}
-                />
-              </g>
             </svg>
 
+            <div
+  ref={carWrapRef}
+  className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+  style={{ opacity: 0 }}
+>
+  <Car3D stateRef={carState} logoSrc={LOGO_SRC} />
+</div>
+            
             {/* DE 3 STAPPEN-KAARTEN */}
             {steps.map((step, index) => {
               const isActive = activeStep >= index + 1;
