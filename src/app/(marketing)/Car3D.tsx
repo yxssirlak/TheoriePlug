@@ -26,7 +26,7 @@ export type CarState = {
 };
 
 const VIEW_W = 1000;
-const VIEW_H = 960;
+const VIEW_H = 1060;
 
 // Camera looks straight down. Distance is chosen so the ground plane maps 1:1
 // onto your SVG viewBox. Lower FOV = flatter look, higher FOV = more 3D sides.
