@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, Variants, AnimatePresence, useScroll, useSpring, useMotionValue } from "framer-motion";
+import { useLenis } from "lenis/react";
 import FeatureMarquee from "./feature-marquee";
 import PackageButton from "./package-button";
 import PackageDropdown from "./package-dropdown";
@@ -148,8 +149,13 @@ const FAQItem = ({ question, answer }: { question: string; answer: string }) => 
 
 
 export default function LandingPage() {
+  const valuesSectionRef = useRef<HTMLElement>(null);
   const valuesTrackRef = useRef<HTMLDivElement>(null);
+  const lastWheelNavigationRef = useRef(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchNavigatedRef = useRef(false);
   const [activeValue, setActiveValue] = useState(0);
+  const lenis = useLenis();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
 
@@ -176,16 +182,107 @@ export default function LandingPage() {
     setCursorSide(x < rect.width / 2 ? "left" : "right");
   };
 
-  const selectValue = (index: number) => {
+  const selectValue = useCallback((index: number) => {
+    const section = valuesSectionRef.current;
     const track = valuesTrackRef.current;
-    const card = track?.querySelectorAll<HTMLElement>("[data-value-card]")[index];
-    if (!track || !card) return;
+    if (!section || !track) return;
 
-    const trackCenter = track.getBoundingClientRect().left + track.clientWidth / 2;
-    const cardRect = card.getBoundingClientRect();
-    const cardCenter = cardRect.left + cardRect.width / 2;
-    track.scrollTo({ left: track.scrollLeft + cardCenter - trackCenter, behavior: "smooth" });
-  };
+    setActiveValue(index);
+    const card = track.querySelectorAll<HTMLElement>("[data-value-card]")[index];
+    if (card) {
+      const trackCenter = track.getBoundingClientRect().left + track.clientWidth / 2;
+      const cardRect = card.getBoundingClientRect();
+      const cardCenter = cardRect.left + cardRect.width / 2;
+      track.scrollTo({ left: track.scrollLeft + cardCenter - trackCenter, behavior: "smooth" });
+    }
+
+    const scrollRange = section.offsetHeight - window.innerHeight;
+    if (scrollRange <= 0) return;
+
+    const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+    const progress = index / (values.length - 1);
+    const targetScroll = sectionTop + scrollRange * progress;
+    if (lenis) {
+      lenis.scrollTo(targetScroll, { immediate: true });
+    } else {
+      window.scrollTo({ top: targetScroll, behavior: "instant" });
+    }
+  }, [lenis]);
+
+  useEffect(() => {
+    const section = valuesSectionRef.current;
+    if (!section) return;
+
+    const getCurrentValue = () =>
+      Array.from(section.querySelectorAll<HTMLButtonElement>("[aria-label^='Toon ']")).findIndex(
+        (indicator) => indicator.getAttribute("aria-current") === "true",
+      );
+
+    const handleWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+
+      const direction = event.deltaY > 0 ? 1 : -1;
+      const currentValue = getCurrentValue();
+      const nextValue = currentValue + direction;
+      if (currentValue < 0) return;
+      if (direction > 0 && currentValue === values.length - 1) return;
+      if (direction < 0 && currentValue === 0) return;
+
+      Object.assign(event, { lenisStopPropagation: true });
+      event.preventDefault();
+      const now = performance.now();
+      if (now - lastWheelNavigationRef.current < 650) return;
+
+      lastWheelNavigationRef.current = now;
+      selectValue(nextValue);
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      touchNavigatedRef.current = false;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const start = touchStartRef.current;
+      const touch = event.touches[0];
+      if (!start || !touch) return;
+
+      const deltaX = touch.clientX - start.x;
+      const deltaY = touch.clientY - start.y;
+      if (Math.abs(deltaY) < 20 || Math.abs(deltaY) <= Math.abs(deltaX)) return;
+
+      const direction = deltaY < 0 ? 1 : -1;
+      const currentValue = getCurrentValue();
+      const nextValue = currentValue + direction;
+      if (currentValue < 0 || nextValue < 0 || nextValue >= values.length) return;
+
+      Object.assign(event, { lenisStopPropagation: true });
+      event.preventDefault();
+      if (touchNavigatedRef.current) return;
+
+      touchNavigatedRef.current = true;
+      selectValue(nextValue);
+    };
+
+    const handleTouchEnd = () => {
+      touchStartRef.current = null;
+    };
+
+    section.addEventListener("wheel", handleWheel, { passive: false });
+    section.addEventListener("touchstart", handleTouchStart, { passive: true });
+    section.addEventListener("touchmove", handleTouchMove, { passive: false });
+    section.addEventListener("touchend", handleTouchEnd);
+    section.addEventListener("touchcancel", handleTouchEnd);
+    return () => {
+      section.removeEventListener("wheel", handleWheel);
+      section.removeEventListener("touchstart", handleTouchStart);
+      section.removeEventListener("touchmove", handleTouchMove);
+      section.removeEventListener("touchend", handleTouchEnd);
+      section.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, [selectValue]);
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-ink text-paper selection:bg-lime selection:text-ink">
@@ -306,8 +403,13 @@ export default function LandingPage() {
   
 
       {/* WAARDEN - Scroll geanimeerd & Links uitgelijnd */}
-      <section id="over-ons" className="py-24 overflow-hidden bg-ink">
-        <div className="px-4 sm:px-10 lg:px-16 xl:px-24">
+      <section
+        ref={valuesSectionRef}
+        id="over-ons"
+        className="relative bg-ink"
+        style={{ height: `calc(${values.length} * 100vh)` }}
+      >
+        <div className="sticky top-0 flex h-screen flex-col justify-center px-4 py-8 sm:px-10 lg:px-16 xl:px-24">
           <div className="mb-12 flex flex-col items-center text-center">
             <motion.h2 initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUpVariants} className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl mb-6">
               Waar wij <span className="text-lime">voor staan</span>
@@ -318,7 +420,7 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          <div className="relative">
+          <div className="relative left-1/2 w-screen -translate-x-1/2">
             <div
               className="relative"
               style={{ cursor: cursorEnabled ? "none" : "default" }}
@@ -358,7 +460,11 @@ export default function LandingPage() {
                 if (event.key === "ArrowLeft") scrollValues(-1);
                 if (event.key === "ArrowRight") scrollValues(1);
               }}
-              className="flex snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain px-[4%] pb-10 sm:px-[10%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              style={{
+                WebkitMaskImage: "linear-gradient(to right, transparent 0%, #000 5%, #000 95%, transparent 100%)",
+                maskImage: "linear-gradient(to right, transparent 0%, #000 5%, #000 95%, transparent 100%)",
+              }}
+              className="flex snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain px-[4%] pb-16 pt-12 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/90 focus-visible:outline-offset-8 sm:px-[10%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {values.map(([title, text], index) => (
                 <motion.div
@@ -368,11 +474,11 @@ export default function LandingPage() {
                   animate={{
                     scale: activeValue === index ? 1 : 0.88,
                     opacity: activeValue === index ? 1 : 0.35,
-                    filter: activeValue === index ? "blur(0px)" : "blur(2px)",
+                    filter: activeValue === index ? "blur(0px)" : "blur(4px)",
                   }}
                   transition={{ duration: 0.35, ease: "easeOut" }}
                   whileHover={{ y: -5 }}
-                  className="flex w-[94%] shrink-0 snap-center items-center gap-2 rounded-[1.5rem] bg-lime p-4 text-ink shadow-[0_24px_70px_rgba(0,0,0,0.28)] transition-shadow hover:shadow-[0_24px_70px_rgba(204,255,0,0.18)] sm:w-[80%] sm:gap-6 sm:rounded-[2rem] sm:p-6 md:gap-8 md:p-10"
+                  className="flex w-[94%] shrink-0 snap-center items-center gap-2 rounded-[1.5rem] bg-lime p-4 text-ink shadow-[0_24px_70px_rgba(0,0,0,0.28)] transition-shadow hover:shadow-[0_24px_70px_rgba(204,255,0,0.18)] sm:w-[80%] sm:gap-6 sm:rounded-[2rem] sm:p-6 md:gap-8 md:p-10 lg:w-[min(65vw,880px)]"
                 >
                   <div className="min-w-0 flex-1 [container-type:inline-size]">
                     <h3 className="mb-3 font-display font-extrabold leading-tight [font-size:min(2.25rem,7.2cqw)]">{title}</h3>
@@ -383,7 +489,9 @@ export default function LandingPage() {
                     alt=""
                     width={200}
                     height={200}
-                    className="h-14 w-14 shrink-0 object-contain sm:h-20 sm:w-20 md:h-28 md:w-28 lg:h-36 lg:w-36"
+                    draggable={false}
+                    onDragStart={(event) => event.preventDefault()}
+                    className="pointer-events-none h-14 w-14 shrink-0 select-none object-contain sm:h-20 sm:w-20 md:h-28 md:w-28 lg:h-36 lg:w-36"
                   />
                 </motion.div>
               ))}
@@ -456,9 +564,6 @@ export default function LandingPage() {
                       MEEST GEKOZEN
                     </motion.div>
                     
-                    <motion.div animate={floatAnimation} className="absolute -top-14 -right-8 w-32 pointer-events-none drop-shadow-xl z-50">
-                       <Image src="/brand/png/svg/sticker-tip.svg" alt="" width={200} height={200} className="w-full h-auto rotate-12" />
-                    </motion.div>
                   </>
                 )}
 

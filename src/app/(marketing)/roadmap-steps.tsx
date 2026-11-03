@@ -645,13 +645,13 @@ carState.current.y = pt.y;
                   <stop offset="100%" stopColor="#000000" stopOpacity="0" />
                 </radialGradient>
                 <linearGradient id="tp-roof-grad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#1e222a" />
-                  <stop offset="100%" stopColor="#12151a" />
+                  <stop offset="0%" stopColor="#88877f" />
+                  <stop offset="100%" stopColor="#686861" />
                 </linearGradient>
                 <linearGradient id="tp-atrium-glass" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#0f2922" />
-                  <stop offset="50%" stopColor="#091512" />
-                  <stop offset="100%" stopColor="#11332a" />
+                  <stop offset="0%" stopColor="#7b9298" />
+                  <stop offset="50%" stopColor="#26373d" />
+                  <stop offset="100%" stopColor="#536a70" />
                 </linearGradient>
               </defs>
 
@@ -814,8 +814,8 @@ carState.current.y = pt.y;
                     transition: "all 400ms cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
                 >
-                  <rect x="-75" y="-16" width="150" height="32" rx="16" fill={LIME} className="drop-shadow-[0_0_20px_rgba(204,255,0,0.6)]" />
-                  <text x="0" y="1" fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="12" fill="#09090b" textAnchor="middle" dominantBaseline="middle" letterSpacing="2">
+                  <rect x="-92" y="-16" width="184" height="32" rx="16" fill={LIME} className="drop-shadow-[0_0_20px_rgba(204,255,0,0.6)]" />
+                  <text x="0" y="1" fontFamily="Monument Extended, sans-serif" fontWeight="800" fontSize="10" fill="#09090b" textAnchor="middle" dominantBaseline="middle" letterSpacing="0.8">
                     ✓ KLAAR VOOR CBR
                   </text>
                 </g>
@@ -825,13 +825,7 @@ carState.current.y = pt.y;
                   DE 2.5D TOP-DOWN CBR EXAMENCAMPUS
                   ================================================================= */}
               <g transform="translate(555, 675)">
-                <rect x="18" y="24" width="380" height="270" rx="22" fill="rgba(0,0,0,0.85)" filter="url(#tp-soft-shadow)" />
-
-                <rect x="-15" y="105" width="95" height="150" rx="10" fill="#161920" stroke="#27272a" strokeWidth="1.5" />
-                <line x1="15" y1="105" x2="15" y2="255" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="45" y1="105" x2="45" y2="255" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="-15" y1="145" x2="80" y2="145" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="-15" y1="215" x2="80" y2="215" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                <rect x="61" y="61" width="286" height="211" fill="rgba(0,0,0,0.58)" filter="url(#tp-soft-shadow)" />
 
                 <path
                   d="M -48 180 L 42 180"
@@ -843,87 +837,47 @@ carState.current.y = pt.y;
                 />
                 <polygon points="28,175 38,180 28,185" fill={parked ? LIME : JADE} />
 
-                {/* Noordvleugel */}
-                <path d="M 160 140 L 370 140 L 384 156 L 174 156 Z" fill="#090b0e" />
-                <path d="M 370 10 L 384 26 L 384 156 L 370 140 Z" fill="#0d1015" />
-                <rect x="160" y="10" width="210" height="130" rx="8" fill="url(#tp-roof-grad)" stroke="#3f3f46" strokeWidth="1.5" />
-                <rect x="168" y="18" width="194" height="114" rx="5" fill="#14171d" stroke="#27272a" strokeWidth="1" />
+                {/* Rectangular brick office footprint, viewed directly from above */}
+                <path d="M 65 255 L 330 255 L 342 267 L 77 267 Z" fill="#49382f" stroke="#382f2a" strokeWidth="2" />
+                <path d="M 330 65 L 342 77 L 342 267 L 330 255 Z" fill="#594238" stroke="#382f2a" strokeWidth="2" />
+                <path d="M 78 261 H 329 M 336 82 V 261" fill="none" stroke="#8a6758" strokeWidth="1" opacity="0.7" />
+                <rect x="65" y="65" width="265" height="190" fill="#75584c" stroke="#382f2a" strokeWidth="3" />
+                <path d="M 68 69 H 327 V 251 H 68 Z" fill="none" stroke="#a27c6a" strokeWidth="1" opacity="0.7" />
 
-                {[0, 1, 2].map((col) => (
-                  <g key={col} transform={`translate(${182 + col * 58}, 28)`}>
-                    <rect x="0" y="0" width="48" height="32" rx="2" fill="#0c1926" stroke="#1e3a5f" strokeWidth="1" />
-                    <line x1="16" y1="0" x2="16" y2="32" stroke="#1e3a5f" strokeWidth="0.8" />
-                    <line x1="32" y1="0" x2="32" y2="32" stroke="#1e3a5f" strokeWidth="0.8" />
-                    <line x1="0" y1="16" x2="48" y2="16" stroke="#1e3a5f" strokeWidth="0.8" />
+                {/* Long rows of facade windows */}
+                {[0, 1, 2, 3, 4, 5].map((window) => {
+                  const x = 82 + window * 39;
+                  return (
+                    <g key={window}>
+                      <rect x={x} y="72" width="28" height="14" fill="#26353a" stroke="#b3a293" strokeWidth="2" />
+                      <path d={`M ${x + 14} 73 V 85`} stroke="#829195" strokeWidth="1" />
+                      <rect x={x} y="234" width="28" height="14" fill="#26353a" stroke="#b3a293" strokeWidth="2" />
+                      <path d={`M ${x + 14} 235 V 247`} stroke="#829195" strokeWidth="1" />
+                    </g>
+                  );
+                })}
+
+                {/* Flat roof and parapet */}
+                <rect x="79" y="94" width="237" height="132" fill="url(#tp-roof-grad)" stroke="#4c4a44" strokeWidth="2" />
+                <path d="M 85 100 H 310 V 220 H 85 Z" fill="none" stroke="#a7a49a" strokeWidth="1" opacity="0.65" />
+                <path d="M 86 105 H 309 M 86 215 H 309" stroke="#5d5c56" strokeWidth="1" />
+
+                {/* Small rooftop service building */}
+                <rect x="174" y="117" width="48" height="48" fill="#55534d" stroke="#3d3b36" strokeWidth="2" />
+                <path d="M 222 117 L 230 125 V 173 L 222 165 Z" fill="#46443f" stroke="#3d3b36" strokeWidth="1" />
+                <path d="M 174 165 L 222 165 L 230 173 L 182 173 Z" fill="#4a4842" stroke="#3d3b36" strokeWidth="1" />
+                <rect x="178" y="121" width="40" height="40" fill="#6d6b63" stroke="#aaa79e" strokeWidth="1" />
+                <path d="M 183 126 H 213 V 156 H 183 Z" fill="none" stroke="#929087" strokeWidth="1" />
+
+                {/* Small rooftop service units */}
+                {[0, 1].map((unit) => (
+                  <g key={unit} transform={`translate(${130 + unit * 92}, 143)`}>
+                    <rect x="0" y="0" width="48" height="34" fill="#74736b" stroke="#aaa79e" strokeWidth="1.5" />
+                    <rect x="4" y="4" width="40" height="26" fill="#555650" />
+                    <circle cx="24" cy="17" r="9" fill="#414541" stroke="#aaa79e" strokeWidth="1" />
+                    <path d="M 24 9 V 25 M 16 17 H 32 M 18 11 L 30 23 M 30 11 L 18 23" stroke="#aaa79e" strokeWidth="1" />
                   </g>
                 ))}
-
-                {/* Hoofdtoren */}
-                <path d="M 65 255 L 330 255 L 352 280 L 87 280 Z" fill="#080a0d" />
-                <path d="M 330 65 L 352 90 L 352 280 L 330 255 Z" fill="#0c0f14" />
-
-                {[95, 135, 175, 215, 255, 295].map((wx) => (
-                  <polygon
-                    key={wx}
-                    points={`${wx},256 ${wx + 22},256 ${wx + 28},263 ${wx + 6},263`}
-                    fill={parked ? LIME : JADE}
-                    opacity={parked ? 0.85 : 0.45}
-                  />
-                ))}
-
-                <rect
-                  x="65"
-                  y="65"
-                  width="265"
-                  height="190"
-                  rx="10"
-                  fill="url(#tp-roof-grad)"
-                  stroke={parked ? LIME : JADE}
-                  strokeWidth="2.5"
-                  style={{
-                    filter: parked
-                      ? "drop-shadow(0 0 28px rgba(204,255,0,0.35))"
-                      : "drop-shadow(0 0 20px rgba(16,185,129,0.22))",
-                    transition: "all 500ms ease",
-                  }}
-                />
-                <rect x="75" y="75" width="245" height="170" rx="6" fill="#12151b" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-
-                {/* Entree Atrium */}
-                <path d="M 32 225 L 85 225 L 97 238 L 44 238 Z" fill="#090b0e" />
-                <rect
-                  x="32"
-                  y="135"
-                  width="55"
-                  height="90"
-                  rx="6"
-                  fill="url(#tp-atrium-glass)"
-                  stroke={JADE}
-                  strokeWidth="2"
-                />
-                <line x1="32" y1="165" x2="87" y2="165" stroke={JADE} strokeWidth="1" opacity="0.45" />
-                <line x1="32" y1="195" x2="87" y2="195" stroke={JADE} strokeWidth="1" opacity="0.45" />
-                <line x1="60" y1="135" x2="60" y2="225" stroke={JADE} strokeWidth="1" opacity="0.45" />
-                <rect x="38" y="142" width="43" height="76" rx="3" fill={LIME} opacity={parked ? 0.22 : 0.08} />
-
-                {/* HVAC units */}
-                {[0, 1, 2].map((u) => (
-                  <g key={u} transform={`translate(${92 + u * 36}, 202)`}>
-                    <rect x="0" y="0" width="28" height="28" rx="4" fill="#1e222b" stroke="#3f3f46" strokeWidth="1.5" />
-                    <circle cx="14" cy="14" r="9" fill="#0b0d11" />
-                    <line x1="14" y1="5" x2="14" y2="23" stroke="#52525b" strokeWidth="1.5" />
-                    <line x1="5" y1="14" x2="23" y2="14" stroke="#52525b" strokeWidth="1.5" />
-                  </g>
-                ))}
-
-                <g transform="translate(278, 198)">
-                  <circle cx="0" cy="0" r="28" fill="#181c24" stroke="#3f3f46" strokeWidth="2" />
-                  <circle cx="0" cy="0" r="21" fill="none" stroke={JADE} strokeWidth="1.5" strokeDasharray="5 4" opacity="0.7" />
-                  <text x="0" y="2" fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="11" fill={JADE} textAnchor="middle" dominantBaseline="middle" opacity="0.8">
-                    CBR
-                  </text>
-                </g>
-
 
                 {/* Campus bomen */}
                 {[
