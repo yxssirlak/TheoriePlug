@@ -358,7 +358,7 @@ export default function LandingPage() {
                 if (event.key === "ArrowLeft") scrollValues(-1);
                 if (event.key === "ArrowRight") scrollValues(1);
               }}
-              className="flex snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain px-[8%] pb-10 sm:px-[15%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain px-[4%] pb-10 sm:px-[10%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {values.map(([title, text], index) => (
                 <motion.div
@@ -372,10 +372,19 @@ export default function LandingPage() {
                   }}
                   transition={{ duration: 0.35, ease: "easeOut" }}
                   whileHover={{ y: -5 }}
-                  className="flex min-h-64 w-[84%] shrink-0 snap-center flex-col justify-center rounded-[2rem] bg-lime p-8 text-ink shadow-[0_24px_70px_rgba(0,0,0,0.28)] transition-shadow hover:shadow-[0_24px_70px_rgba(204,255,0,0.18)] sm:w-[70%] sm:p-12"
+                  className="flex w-[94%] shrink-0 snap-center items-center gap-2 rounded-[1.5rem] bg-lime p-4 text-ink shadow-[0_24px_70px_rgba(0,0,0,0.28)] transition-shadow hover:shadow-[0_24px_70px_rgba(204,255,0,0.18)] sm:w-[80%] sm:gap-6 sm:rounded-[2rem] sm:p-6 md:gap-8 md:p-10"
                 >
-                  <h3 className="mb-4 break-words font-display text-2xl font-extrabold [overflow-wrap:anywhere] sm:text-3xl lg:text-4xl">{title}</h3>
-                  <p className="max-w-2xl break-words text-lg font-medium [overflow-wrap:anywhere] sm:text-xl lg:text-2xl">{text}</p>
+                  <div className="min-w-0 flex-1 [container-type:inline-size]">
+                    <h3 className="mb-3 font-display font-extrabold leading-tight [font-size:min(2.25rem,7.2cqw)]">{title}</h3>
+                    <p className="text-sm font-medium sm:text-lg lg:text-xl">{text}</p>
+                  </div>
+                  <Image
+                    src={`/brand/png/svg/sticker-${title.toLowerCase()}.svg`}
+                    alt=""
+                    width={200}
+                    height={200}
+                    className="h-14 w-14 shrink-0 object-contain sm:h-20 sm:w-20 md:h-28 md:w-28 lg:h-36 lg:w-36"
+                  />
                 </motion.div>
               ))}
             </motion.div>
