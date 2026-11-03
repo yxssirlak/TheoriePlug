@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, Variants, AnimatePresence, useScroll, useSpring, useMotionValue } from "framer-motion";
@@ -9,6 +9,7 @@ import FeatureMarquee from "./feature-marquee";
 import PackageButton from "./package-button";
 import PackageDropdown from "./package-dropdown";
 import RoadmapSteps from "./roadmap-steps";
+import { CONSENT_EVENT, OPEN_CONSENT_EVENT, readPreference, writePreference } from "../../lib/consent";
 
 
 
@@ -124,6 +125,42 @@ const floatAnimation: any = {
   }
 };
 
+const LEGAL_LINKS = [
+  { href: "/algemene-voorwaarden", label: "Algemene voorwaarden" },
+  { href: "/privacybeleid", label: "Privacybeleid" },
+  { href: "/herroepingsrecht", label: "Herroepingsrecht" },
+];
+
+// Vul het KvK-nummer in; het wordt pas in de footer getoond als het gevuld is.
+const KVK_NUMMER = "";
+
+const PAYMENT_METHODS = ["iDEAL", "Klarna", "Apple Pay", "Visa", "Mastercard"];
+
+const PaymentBadges = ({ light = false }: { light?: boolean }) => (
+  <ul aria-label="Betaalmethodes" className="flex flex-wrap items-center justify-center gap-2">
+    {PAYMENT_METHODS.map((method) => (
+      <li
+        key={method}
+        className={`rounded-lg border px-3 py-1.5 text-sm font-bold ${
+          light ? "border-ink/15 bg-white text-ink" : "border-paper/20 bg-paper/5 text-paper/80"
+        }`}
+      >
+        {method}
+      </li>
+    ))}
+  </ul>
+);
+
+// Vaste "willekeurige" posities (geen Math.random i.v.m. hydration); elk plaatje heeft een eigen tempo.
+const CTA_STICKERS: {
+  name: string; top: string; left?: string; right?: string; size: string;
+  tilt: number; amp: number; duration: number; delay: number; mobile: boolean;
+}[] = [
+  { name: "rijbewijs", top: "40%", left: "6%", size: "w-24 lg:w-28", tilt: -12, amp: 7, duration: 3.1, delay: 0, mobile: false },
+  { name: "thumbsup", top: "34%", right: "8%", size: "w-20 lg:w-24", tilt: 14, amp: 5, duration: 4.3, delay: 0.7, mobile: false },
+  { name: "car", top: "64%", right: "16%", size: "w-20 lg:w-24", tilt: 8, amp: 9, duration: 5.2, delay: 1.4, mobile: false },
+];
+
 // --- FAQ COMPONENT ---
 const FAQItem = ({ question, answer }: { question: string; answer: string }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -148,6 +185,8 @@ const FAQItem = ({ question, answer }: { question: string; answer: string }) => 
 
 
 
+const VALUES_SEEN_KEY = "tp-values-carousel-seen" as const;
+
 export default function LandingPage() {
   const valuesSectionRef = useRef<HTMLElement>(null);
   const valuesTrackRef = useRef<HTMLDivElement>(null);
@@ -155,6 +194,11 @@ export default function LandingPage() {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchNavigatedRef = useRef(false);
   const [activeValue, setActiveValue] = useState(0);
+  // Na de eerste keer helemaal doorlopen blijft de sectie een gewone (niet-vastgepinde) carrousel
+  const [valuesSeen, setValuesSeen] = useState(false);
+  const valuesSeenRef = useRef(false);
+  const reachedLastValueRef = useRef(false);
+  const layoutAnchorTopRef = useRef<number | null>(null);
   const lenis = useLenis();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
@@ -196,6 +240,7 @@ export default function LandingPage() {
       track.scrollTo({ left: track.scrollLeft + cardCenter - trackCenter, behavior: "smooth" });
     }
 
+    if (valuesSeenRef.current) return;
     const scrollRange = section.offsetHeight - window.innerHeight;
     if (scrollRange <= 0) return;
 
@@ -219,6 +264,7 @@ export default function LandingPage() {
       );
 
     const handleWheel = (event: WheelEvent) => {
+      if (valuesSeenRef.current) return;
       if (event.ctrlKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
 
       const direction = event.deltaY > 0 ? 1 : -1;
@@ -245,6 +291,7 @@ export default function LandingPage() {
     };
 
     const handleTouchMove = (event: TouchEvent) => {
+      if (valuesSeenRef.current) return;
       const start = touchStartRef.current;
       const touch = event.touches[0];
       if (!start || !touch) return;
@@ -283,6 +330,69 @@ export default function LandingPage() {
       section.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, [selectValue]);
+
+  useEffect(() => {
+    const restore = () => {
+      if (!readPreference(VALUES_SEEN_KEY)) return;
+      valuesSeenRef.current = true;
+      setValuesSeen(true);
+    };
+    // Toestemming die later wordt gegeven geldt ook voor wat je net al hebt gezien
+    const persist = () => {
+      if (reachedLastValueRef.current) writePreference(VALUES_SEEN_KEY);
+    };
+
+    restore();
+    window.addEventListener(CONSENT_EVENT, persist);
+    return () => window.removeEventListener(CONSENT_EVENT, persist);
+  }, []);
+
+  useEffect(() => {
+    if (activeValue !== values.length - 1) return;
+    reachedLastValueRef.current = true;
+    writePreference(VALUES_SEEN_KEY);
+  }, [activeValue]);
+
+  // Pas als de sectie na de laatste kaart naar boven uit beeld is, klappen we hem in
+  useEffect(() => {
+    const section = valuesSectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (
+        entry.isIntersecting ||
+        entry.boundingClientRect.bottom > 0 ||
+        !reachedLastValueRef.current ||
+        valuesSeenRef.current
+      ) {
+        return;
+      }
+
+      layoutAnchorTopRef.current = document.getElementById("pakketten")?.getBoundingClientRect().top ?? null;
+      valuesSeenRef.current = true;
+      setValuesSeen(true);
+    });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  // Houd de content onder de sectie op dezelfde plek wanneer de sectie krimpt
+  useLayoutEffect(() => {
+    const before = layoutAnchorTopRef.current;
+    layoutAnchorTopRef.current = null;
+    const anchor = document.getElementById("pakketten");
+    if (before === null || !anchor) return;
+
+    const shift = anchor.getBoundingClientRect().top - before;
+    if (Math.abs(shift) < 1) return;
+
+    const target = window.scrollY + shift;
+    if (lenis) {
+      lenis.scrollTo(target, { immediate: true });
+    } else {
+      window.scrollTo({ top: target, behavior: "instant" });
+    }
+  }, [valuesSeen, lenis]);
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-ink text-paper selection:bg-lime selection:text-ink">
@@ -407,9 +517,15 @@ export default function LandingPage() {
         ref={valuesSectionRef}
         id="over-ons"
         className="relative bg-ink"
-        style={{ height: `calc(${values.length} * 100vh)` }}
+        style={valuesSeen ? undefined : { height: `calc(${values.length} * 100vh)` }}
       >
-        <div className="sticky top-0 flex h-screen flex-col justify-center px-4 py-8 sm:px-10 lg:px-16 xl:px-24">
+        <div
+          className={
+            valuesSeen
+              ? "flex flex-col justify-center px-4 py-24 sm:px-10 lg:px-16 xl:px-24"
+              : "sticky top-0 flex h-screen flex-col justify-center px-4 py-8 sm:px-10 lg:px-16 xl:px-24"
+          }
+        >
           <div className="mb-12 flex flex-col items-center text-center">
             <motion.h2 initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUpVariants} className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl mb-6">
               Waar wij <span className="text-lime">voor staan</span>
@@ -603,6 +719,11 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </div>
+
+          <div className="mt-10 flex flex-col items-center gap-3 text-ink/70">
+            <p className="text-sm font-semibold">Veilig betalen met</p>
+            <PaymentBadges light />
+          </div>
         </div>
       </section>
 
@@ -659,12 +780,46 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FINAL CTA */}
+      <section className="bg-ink px-4 pb-24 sm:px-6 lg:px-8">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUpVariants} className="relative mx-auto max-w-5xl rounded-[2rem] bg-lime px-6 py-12 text-center text-ink sm:px-12 md:py-16">
+          {CTA_STICKERS.map((sticker) => (
+            <motion.div
+              key={sticker.name}
+              animate={{ y: [0, -sticker.amp, 0, sticker.amp, 0], rotate: [sticker.tilt - 3, sticker.tilt + 3, sticker.tilt - 3] }}
+              transition={{ duration: sticker.duration, delay: sticker.delay, repeat: Infinity, ease: "easeInOut" }}
+              style={{ top: sticker.top, left: sticker.left, right: sticker.right }}
+              className={`pointer-events-none absolute z-20 drop-shadow-xl ${sticker.size} ${sticker.mobile ? "" : "hidden sm:block"}`}
+            >
+              <Image src={`/brand/png/svg/sticker-${sticker.name}.svg`} alt="" width={200} height={200} className="h-auto w-full" />
+            </motion.div>
+          ))}
+                  <h2 className="font-display font-extrabold text-3xl md:text-5xl leading-tight">Klaar om in één keer te slagen?</h2>
+          <p className="mx-auto mt-4 max-w-xl text-lg font-medium text-ink/80">Kies vandaag nog je pakket en plug je kennis.</p>
+          <a href="#pakketten" className="mt-8 inline-block rounded-full bg-ink px-8 py-4 text-lg font-bold text-lime transition-transform hover:scale-105">
+            Kies je pakket
+          </a>
+        </motion.div>
+      </section>
+
       {/* FOOTER */}
       <footer id="contact" className="py-16 text-center text-paper/60 bg-ink border-t border-paper/10">
-        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="px-4">
           <Image src="/brand/png/svg/logo.svg" alt="TheoriePlug" width={582} height={61} className="h-8 w-auto mx-auto mb-6 opacity-50 grayscale hover:grayscale-0 transition-all duration-300" />
           <p className="font-medium">info@theorieplug.nl <span className="mx-2 text-lime/50">•</span> @theorieplug <span className="mx-2 text-lime/50">•</span> www.theorieplug.nl</p>
-          <p className="mt-4 text-sm opacity-50">© 2026 TheoriePlug. Alle rechten voorbehouden.</p>
+          <nav aria-label="Juridisch" className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-semibold">
+            {LEGAL_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} className="hover:text-lime transition-colors">{link.label}</Link>
+            ))}
+            <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_CONSENT_EVENT))} className="hover:text-lime transition-colors">
+              Cookie-instellingen
+            </button>
+          </nav>
+          <div className="mt-6 flex justify-center"><PaymentBadges /></div>
+          <p className="mt-6 text-sm opacity-50">
+            © 2026 TheoriePlug. Alle rechten voorbehouden.
+            {KVK_NUMMER && <> <span className="mx-1">•</span> KvK {KVK_NUMMER}</>}
+          </p>
         </motion.div>
       </footer>
     </div>

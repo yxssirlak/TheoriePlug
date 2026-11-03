@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Archivo } from "next/font/google";
 import SmoothScroll from "../components/SmoothScroll";
+import CookieConsent from "../components/CookieConsent";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: any) {
         <SmoothScroll>
           {children}
         </SmoothScroll>
+        <CookieConsent />
       </body>
     </html>
   );
