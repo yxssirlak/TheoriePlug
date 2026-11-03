@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, Variants, AnimatePresence, useScroll, useSpring } from "framer-motion";
+import { motion, Variants, AnimatePresence, useScroll, useSpring, useMotionValue } from "framer-motion";
 import FeatureMarquee from "./feature-marquee";
 import PackageButton from "./package-button";
 import PackageDropdown from "./package-dropdown";
@@ -148,8 +148,44 @@ const FAQItem = ({ question, answer }: { question: string; answer: string }) => 
 
 
 export default function LandingPage() {
+  const valuesTrackRef = useRef<HTMLDivElement>(null);
+  const [activeValue, setActiveValue] = useState(0);
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+
+  const cursorX = useMotionValue(0);
+  const cursorY = useMotionValue(0);
+  const [cursorSide, setCursorSide] = useState<"left" | "right" | null>(null);
+
+  const scrollValues = (direction: -1 | 1) => {
+    const nextValue = Math.max(0, Math.min(values.length - 1, activeValue + direction));
+    selectValue(nextValue);
+  };
+
+  const cursorDirection = cursorSide === "left" ? -1 : 1;
+  const cursorEnabled =
+    cursorSide !== null &&
+    (cursorSide === "left" ? activeValue > 0 : activeValue < values.length - 1);
+
+  const handleCarouselMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch") return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    cursorX.set(x);
+    cursorY.set(event.clientY - rect.top);
+    setCursorSide(x < rect.width / 2 ? "left" : "right");
+  };
+
+  const selectValue = (index: number) => {
+    const track = valuesTrackRef.current;
+    const card = track?.querySelectorAll<HTMLElement>("[data-value-card]")[index];
+    if (!track || !card) return;
+
+    const trackCenter = track.getBoundingClientRect().left + track.clientWidth / 2;
+    const cardRect = card.getBoundingClientRect();
+    const cardCenter = cardRect.left + cardRect.width / 2;
+    track.scrollTo({ left: track.scrollLeft + cardCenter - trackCenter, behavior: "smooth" });
+  };
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-ink text-paper selection:bg-lime selection:text-ink">
@@ -272,27 +308,111 @@ export default function LandingPage() {
       {/* WAARDEN - Scroll geanimeerd & Links uitgelijnd */}
       <section id="over-ons" className="py-24 overflow-hidden bg-ink">
         <div className="px-4 sm:px-10 lg:px-16 xl:px-24">
-          <div className="mb-12 flex flex-col items-start text-left">
+          <div className="mb-12 flex flex-col items-center text-center">
             <motion.h2 initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUpVariants} className="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl mb-6">
               Waar wij <span className="text-lime">voor staan</span>
             </motion.h2>
             
-            <motion.div initial={{ opacity: 0, rotate: -6, scale: 0.9 }} whileInView={{ opacity: 1, rotate: -2, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", bounce: 0.5, duration: 0.8, delay: 0.2 }} className="inline-block bg-lime px-5 py-4 text-left font-display text-xl font-extrabold text-ink shadow-xl sm:px-8 sm:text-2xl lg:text-3xl relative">
-               <motion.div animate={floatAnimation} className="absolute -top-12 -right-12 w-28 pointer-events-none drop-shadow-xl z-20">
-                  <Image src="/brand/png/svg/sticker-geslaagd.svg" alt="" width={200} height={200} className="w-full h-auto rotate-12" />
-               </motion.div>
+            <motion.div initial={{ opacity: 0, rotate: -6, scale: 0.9 }} whileInView={{ opacity: 1, rotate: -2, scale: 1 }} viewport={{ once: true }} transition={{ type: "spring", bounce: 0.5, duration: 0.8, delay: 0.2 }} className="relative inline-block bg-lime px-5 py-4 text-center font-display text-xl font-extrabold text-ink shadow-xl sm:px-8 sm:text-2xl lg:text-3xl">
               Plug je kennis. Own de weg.
             </motion.div>
           </div>
 
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={containerVariants} className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {values.map(([title, text]) => (
-              <motion.div key={title} variants={itemVariants} whileHover={{ y: -5 }} className="corner-cut bg-lime text-ink p-8 pb-12 transition-shadow hover:shadow-2xl hover:shadow-lime/20">
-                <h3 className="font-display font-extrabold text-xl lg:text-2xl mb-3">{title}</h3>
-                <p className="text-base lg:text-lg font-medium">{text}</p>
+          <div className="relative">
+            <div
+              className="relative"
+              style={{ cursor: cursorEnabled ? "none" : "default" }}
+              onPointerMove={handleCarouselMove}
+              onPointerLeave={() => setCursorSide(null)}
+              onClick={() => {
+                if (cursorEnabled) scrollValues(cursorDirection);
+              }}
+            >
+            <motion.div
+              ref={valuesTrackRef}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+              variants={containerVariants}
+              onScroll={(event) => {
+                const track = event.currentTarget;
+                const trackCenter = track.getBoundingClientRect().left + track.clientWidth / 2;
+                const cards = Array.from(track.querySelectorAll<HTMLElement>("[data-value-card]"));
+                const nearestIndex = cards.reduce(
+                  (nearest, card, index) => {
+                    const cardRect = card.getBoundingClientRect();
+                    const nearestRect = cards[nearest].getBoundingClientRect();
+                    return Math.abs(cardRect.left + cardRect.width / 2 - trackCenter) <
+                      Math.abs(nearestRect.left + nearestRect.width / 2 - trackCenter)
+                      ? index
+                      : nearest;
+                  },
+                  0,
+                );
+                setActiveValue(nearestIndex);
+              }}
+              role="region"
+              aria-label="TheoriePlug-waarden"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowLeft") scrollValues(-1);
+                if (event.key === "ArrowRight") scrollValues(1);
+              }}
+              className="flex snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain px-[8%] pb-10 sm:px-[15%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {values.map(([title, text], index) => (
+                <motion.div
+                  key={title}
+                  data-value-card
+                  variants={itemVariants}
+                  animate={{
+                    scale: activeValue === index ? 1 : 0.88,
+                    opacity: activeValue === index ? 1 : 0.35,
+                    filter: activeValue === index ? "blur(0px)" : "blur(2px)",
+                  }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  whileHover={{ y: -5 }}
+                  className="flex min-h-64 w-[84%] shrink-0 snap-center flex-col justify-center rounded-[2rem] bg-lime p-8 text-ink shadow-[0_24px_70px_rgba(0,0,0,0.28)] transition-shadow hover:shadow-[0_24px_70px_rgba(204,255,0,0.18)] sm:w-[70%] sm:p-12"
+                >
+                  <h3 className="mb-4 break-words font-display text-2xl font-extrabold [overflow-wrap:anywhere] sm:text-3xl lg:text-4xl">{title}</h3>
+                  <p className="max-w-2xl break-words text-lg font-medium [overflow-wrap:anywhere] sm:text-xl lg:text-2xl">{text}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <motion.div
+              aria-hidden="true"
+              style={{ x: cursorX, y: cursorY }}
+              className="pointer-events-none absolute left-0 top-0 z-20 hidden md:block"
+            >
+              <motion.div
+                initial={false}
+                animate={{ scale: cursorEnabled ? 1 : 0, opacity: cursorEnabled ? 1 : 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                className="-ml-10 -mt-10 flex h-20 w-20 items-center justify-center rounded-full bg-[#09090b] text-4xl font-bold text-lime shadow-[0_0_30px_rgba(204,255,0,0.25)]"
+              >
+                {cursorDirection === -1 ? "←" : "→"}
               </motion.div>
-            ))}
-          </motion.div>
+            </motion.div>
+            </div>
+
+            <div className="mt-2 flex justify-center">
+              <div className="flex gap-2" aria-label="Kies een waarde">
+                {values.map(([title], index) => (
+                  <button
+                    key={title}
+                    type="button"
+                    onClick={() => selectValue(index)}
+                    aria-label={`Toon ${title}`}
+                    aria-current={activeValue === index ? "true" : undefined}
+                    className={`h-2.5 rounded-full transition-all ${
+                      activeValue === index ? "w-8 bg-lime" : "w-2.5 bg-paper/30 hover:bg-paper/60"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

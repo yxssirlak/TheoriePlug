@@ -661,14 +661,6 @@ carState.current.y = pt.y;
               {/* Sfeerlichten */}
               <ellipse cx="720" cy="830" rx="260" ry="190" fill="url(#tp-campus-aura)" />
 
-              {/* STARTPORTAAL */}
-              <g transform="translate(500, 42)">
-                <rect x="-56" y="-12" width="112" height="24" rx="6" fill="#14161a" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
-                <text x="0" y="2" fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="10" fill={LIME} textAnchor="middle" dominantBaseline="middle" letterSpacing="3">
-                  START ROUTE
-                </text>
-              </g>
-
               {/* DE WEG */}
               <path d={ROAD_PATH} stroke="rgba(16,185,129,0.08)" strokeWidth={104} strokeLinecap="round" />
               <path d={ROAD_PATH} stroke="#383c45" strokeWidth={90} strokeLinecap="round" />
@@ -692,6 +684,10 @@ carState.current.y = pt.y;
                   filter: "drop-shadow(0 0 14px rgba(16, 185, 129, 0.8))",
                 }}
               />
+
+              {/* STARTPORTAAL */}
+              <g transform="translate(500, 42)">
+              </g>
 
               {/* Haaientanden in de bocht */}
               <g transform={`translate(${marks.teeth.x} ${marks.teeth.y}) rotate(${marks.teeth.rot}) translate(-26 -6)`} opacity="0.8" fill="#ffffff">
