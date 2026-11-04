@@ -143,7 +143,7 @@ export default function PackageDropdown({ packages }: { packages: DropdownPackag
               <h2 className="font-display text-lg font-extrabold sm:text-xl">Kies jouw pakket</h2>
             </div>
             <Link
-              href="#pakketten"
+              href="/#pakketten"
               onClick={() => setOpen(false)}
               className="rounded-full bg-jade px-5 py-2 text-base font-bold text-ink shadow-[0_0_18px_rgba(16,185,129,0.35)] transition hover:brightness-110 hover:shadow-[0_0_28px_rgba(16,185,129,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-jade focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
             >
@@ -155,7 +155,7 @@ export default function PackageDropdown({ packages }: { packages: DropdownPackag
             {packages.map((item) => (
               <Link
                 key={item.id}
-                href={`#${item.id}`}
+                href={`/#${item.id}`}
                 onClick={() => setOpen(false)}
                 className={`group/card flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime sm:px-5 ${
                   item.featured

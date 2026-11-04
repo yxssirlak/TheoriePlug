@@ -1,14 +1,14 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, Variants, AnimatePresence, useScroll, useSpring, useMotionValue } from "framer-motion";
 import { useLenis } from "lenis/react";
-import FeatureMarquee from "./feature-marquee";
-import PackageButton from "./package-button";
-import PackageDropdown from "./package-dropdown";
-import RoadmapSteps from "./roadmap-steps";
+import FeatureMarquee from "../../components/marketing/feature-marquee";
+import PackageButton from "../../components/marketing/package-button";
+import MarketingNav from "../../components/marketing/MarketingNav";
+import RoadmapSteps from "../../components/marketing/roadmap-steps";
 import { CONSENT_EVENT, OPEN_CONSENT_EVENT, readPreference, writePreference } from "../../lib/consent";
 
 
@@ -22,68 +22,7 @@ const values = [
   ["Toegankelijkheid", "Overal beschikbaar: op je telefoon, tablet of laptop."],
 ];
 
-type PackageFeature = {
-  label: string;
-  highlight?: "jade" | "lime";
-  detail?: string;
-};
-
-type TheoryPackage = {
-  id: string;
-  name: string;
-  desc: string;
-  price: string;
-  featured?: boolean;
-  items: PackageFeature[];
-};
-
-const packages: TheoryPackage[] = [
-  {
-    id: "pakket-start",
-    name: "Start",
-    desc: "Een sterke basis voor je theorie-examen.",
-    price: "€29,99",
-    items: [
-      { label: "7 dagen" },
-      { label: "3 oefenexamens", detail: "250 vragen" },
-      { label: "Videocursus" },
-      { label: "ADAS" },
-      { label: "Cheat Sheet" },
-    ],
-  },
-  {
-    id: "pakket-max",
-    name: "Max",
-    desc: "Alles in huis voor een complete voorbereiding.",
-    price: "€44,99",
-    featured: true,
-    items: [
-      { label: "1 maand" },
-      { label: "10 oefenexamens", detail: "500 vragen" },
-      { label: "Videocursus" },
-      { label: "ADAS" },
-      { label: "Cheat Sheet" },
-      { label: "1 x pauzeren" },
-      { label: "Adaptive", highlight: "lime" },
-      { label: "Flashcards", highlight: "lime" },
-    ],
-  },
-  {
-    id: "pakket-boost",
-    name: "Boost",
-    desc: "Extra oefenen en leren op jouw tempo.",
-    price: "€39,99",
-    items: [
-      { label: "14 dagen" },
-      { label: "8 oefenexamens", detail: "400 vragen" },
-      { label: "Videocursus" },
-      { label: "ADAS" },
-      { label: "Cheat Sheet" },
-      { label: "1 x pauzeren" },
-      { label: "Adaptive", highlight: "jade" },
-    ],
-  },
-];
+import { packages } from "../../components/marketing/packages-data";
 
 const reviews = [
   { name: "Sarah de Vries", text: "Na 2 keer zakken uit boeken eindelijk geslaagd! De proefexamens lijken écht op het CBR.", rating: 5 },
@@ -405,24 +344,7 @@ export default function LandingPage() {
       
       {/* HERO SECTION */}
       <section className="hero-fade relative overflow-visible">
-        {/* Navigatie */}
-        <motion.nav 
-          initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative z-30 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-4 px-4 py-6 sm:px-10 lg:px-16 xl:px-24 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
-        >
-          <Link href="/">
-            <Image src="/brand/png/svg/logo.svg" alt="TheoriePlug" width={582} height={61} priority className="h-7 sm:h-8 lg:h-9 w-auto" />
-          </Link>
-          <div className="col-span-2 row-start-2 flex flex-wrap items-center justify-center gap-x-1 gap-y-1 sm:gap-x-3 md:col-span-1 md:col-start-2 md:row-start-auto md:gap-x-2">
-            <Link href="#contact" className="rounded-full px-3 py-2 text-base font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-lg lg:px-4 lg:text-xl">Contact</Link>
-            <Link href="#over-ons" className="rounded-full px-3 py-2 text-base font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-lg lg:px-4 lg:text-xl">Over ons</Link>
-            <Link href="mailto:info@theorieplug.nl?subject=Demo%20aanvragen" className="rounded-full px-3 py-2 text-base font-bold transition-colors hover:bg-paper/10 hover:text-lime sm:text-lg lg:px-4 lg:text-xl">Demo</Link>
-            <PackageDropdown packages={packages} />
-          </div>
-          <Link href="/login" className="justify-self-end rounded-full border border-paper/30 px-4 py-2 text-base font-bold transition-colors hover:border-lime hover:bg-lime hover:text-ink sm:px-5 sm:text-lg lg:text-xl">
-            Inloggen
-          </Link>
-        </motion.nav>
+        <MarketingNav />
 
         {/* Hero Content */}
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative px-4 sm:px-10 lg:px-16 xl:px-24 pt-32 pb-16 md:pt-32 md:pb-20">
@@ -440,7 +362,7 @@ export default function LandingPage() {
             <Link href="#pakketten" className="bg-lime text-ink px-8 py-4 rounded-full font-bold text-base sm:text-lg lg:text-xl hover:brightness-110 transition-all active:scale-95">
               Bekijk Pakketten
             </Link>
-            <Link href="#platform" className="border border-paper/40 px-8 py-4 rounded-full font-bold text-base sm:text-lg lg:text-xl hover:bg-paper/10 transition-colors active:scale-95">
+            <Link href="/demo" className="border border-paper/40 px-8 py-4 rounded-full font-bold text-base sm:text-lg lg:text-xl hover:bg-paper/10 transition-colors active:scale-95">
               Probeer Demo
             </Link>
           </motion.div>
@@ -713,7 +635,7 @@ export default function LandingPage() {
                   </ul>
                   
                   <div className="relative z-10 mt-auto">
-                     <PackageButton featured={Boolean(p.featured)} />
+                     <PackageButton featured={Boolean(p.featured)} slug={p.id.replace("pakket-", "")} />
                   </div>
                 </div>
               </motion.div>

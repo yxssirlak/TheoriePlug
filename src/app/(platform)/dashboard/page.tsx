@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useUser } from "../../../components/dashboard/user-context";
 
 const STATS = [
@@ -37,9 +38,27 @@ function greeting(): string {
 export default function DashboardPage() {
   const user = useUser();
   const tip = TIPS[new Date().getDate() % TIPS.length];
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("success") === "true") {
+      setSuccess(true);
+      window.history.replaceState(null, "", "/dashboard");
+    }
+  }, []);
 
   return (
     <div className="space-y-8">
+      {success && (
+        <div role="status" className="flex items-start justify-between gap-4 rounded-2xl border border-lime/40 bg-lime/10 px-5 py-4">
+          <p className="font-semibold text-lime">
+            Betaling gelukt! Je pakket is actief. Veel succes met oefenen!
+          </p>
+          <button type="button" onClick={() => setSuccess(false)} aria-label="Sluiten" className="text-paper/60 transition-colors hover:text-paper">
+            ✕
+          </button>
+        </div>
+      )}
       <section>
         <p className="text-paper/60">{greeting()},</p>
         <h1 className="font-display text-3xl font-extrabold sm:text-5xl">
@@ -51,16 +70,16 @@ export default function DashboardPage() {
       <section className="rounded-3xl bg-lime p-6 text-ink sm:p-8">
         <div className="max-w-xl">
           <p className="text-sm font-bold uppercase tracking-widest text-ink/60">Aan de slag</p>
-          <h2 className="mt-2 font-display text-2xl font-extrabold sm:text-3xl">Start je eerste oefenexamen</h2>
+          <h2 className="mt-2 font-display text-2xl font-extrabold sm:text-3xl">Start hier je videocursus</h2>
           <p className="mt-2 font-medium text-ink/80">
             Zo weet je direct waar je staat en welke onderdelen extra aandacht nodig hebben.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/oefenexamens" className="rounded-full bg-ink px-6 py-3 font-bold text-lime transition-transform hover:scale-105">
-              Start oefenexamen
+            <Link href="/videocursus" className="rounded-full bg-ink px-6 py-3 font-bold text-lime transition-transform hover:scale-105">
+              Start videocursus
             </Link>
-            <Link href="/videocursus" className="rounded-full border-2 border-ink px-6 py-3 font-bold transition-colors hover:bg-ink hover:text-lime">
-              Bekijk de videocursus
+            <Link href="/oefenexamens" className="rounded-full border-2 border-ink px-6 py-3 font-bold transition-colors hover:bg-ink hover:text-lime">
+              Bekijk de oefenexamens
             </Link>
           </div>
         </div>

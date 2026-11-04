@@ -81,6 +81,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   const isActive = (href: string) => (href === "/dashboard" ? pathname === href : pathname.startsWith(href));
   const settings = NAV_ITEMS[NAV_ITEMS.length - 1];
+  
+  // Bepaal de dynamische paginatitel
+  const activeNavItem = NAV_ITEMS.find(item => isActive(item.href));
+  const pageTitle = activeNavItem ? activeNavItem.label : "Dashboard";
 
   return (
     <UserProvider value={user}>
@@ -96,58 +100,78 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 : "w-24 bg-[#060e1a]"
             } ${collapsed && hovered ? "shadow-[14px_0_45px_rgba(0,0,0,0.7)]" : ""}`}
           >
-           {/* Header: Logo & Punaise */}
-            <div className={`relative mb-8 flex w-full items-center transition-all duration-300 ${expanded ? "justify-between" : "justify-center"}`}>
-              <Link href="/dashboard" aria-label="Naar overzicht" className="flex items-center">
-                {expanded ? (
-                  <Image
-                    src="/brand/png/svg/logo.svg"
-                    alt="TheoriePlug"
-                    width={582}
-                    height={61}
-                    priority
-                    className="h-7 w-auto transition-opacity duration-300"
-                  />
-                ) : (
+            {/* Geanimeerde achtergrond glows (gesplitst voor smooth crossfade) */}
+            <div
+              aria-hidden="true"
+              className={`pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(16,185,129,0.15),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(204,255,0,0.08),transparent_55%)] transition-opacity duration-700 ease-in-out ${
+                expanded ? "opacity-100" : "opacity-0"
+              }`}
+            />
+            <div
+              aria-hidden="true"
+              className={`pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(204,255,0,0.12),transparent_60%),radial-gradient(circle_at_50%_90%,rgba(16,185,129,0.15),transparent_60%)] transition-opacity duration-700 ease-in-out ${
+                expanded ? "opacity-0" : "opacity-100"
+              }`}
+            />
+
+            {/* Header: Logo & Punaise met vloeiende crossfade animatie */}
+            <div className="relative mb-8 flex h-16 w-full items-start justify-between">
+              <Link href="/dashboard" aria-label="Naar overzicht" className="relative mt-4 flex h-full flex-1 items-start">
+                {/* Brede tekstlogo */}
+                <Image
+                  src="/brand/png/svg/logo.svg"
+                  alt="TheoriePlug"
+                  width={582}
+                  height={61}
+                  priority
+                  className={`absolute left-0 top-0 h-6 w-auto transition-all duration-500 ease-in-out ${
+                    expanded ? "translate-x-0 opacity-100" : "pointer-events-none -translate-x-4 opacity-0"
+                  }`}
+                />
+                {/* Kleine tegel logo: Flink groter gemaakt en absoluut gecentreerd */}
+                <div className={`absolute -top-4 flex w-full items-center justify-center transition-all duration-500 ease-in-out ${
+                    expanded ? "pointer-events-none scale-75 opacity-0" : "scale-100 opacity-100 hover:scale-105"
+                  }`}>
                   <Image
                     src="/brand/png/svg/logo-upright-b-limoen-tegel.svg"
                     alt="TheoriePlug"
-                    width={48}
-                    height={48}
+                    width={80}
+                    height={80}
                     priority
-                    className="h-12 w-12 object-contain transition-transform duration-300 hover:scale-105"
+                    className="h-16 w-16 object-contain"
                   />
-                )}
+                </div>
               </Link>
 
-              {expanded && (
-                <button
-                  type="button"
-                  onClick={() => setCollapsed((prev) => !prev)}
-                  title={collapsed ? "Zijbalk vastpinnen" : "Zijbalk losmaken"}
-                  aria-label="Zijbalk vastpinnen"
-                  className="-mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent text-paper/40 transition-colors hover:bg-white/5 hover:text-white"
+              {/* Pin / Punaise knop */}
+              <button
+                type="button"
+                onClick={() => setCollapsed((prev) => !prev)}
+                title={collapsed ? "Zijbalk vastpinnen" : "Zijbalk losmaken"}
+                aria-label="Zijbalk vastpinnen"
+                className={`absolute -right-3 -top-3 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent text-paper/40 transition-all duration-500 hover:bg-white/5 hover:text-white ${
+                  expanded ? "scale-100 opacity-100" : "pointer-events-none scale-50 opacity-0"
+                }`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`h-4 w-4 transition-transform duration-300 ${!collapsed ? "rotate-0" : "-rotate-45"}`}
+                  aria-hidden="true"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={`h-4 w-4 transition-transform duration-300 ${!collapsed ? "rotate-0" : "-rotate-45"}`}
-                    aria-hidden="true"
-                  >
-                    <line x1="12" y1="17" x2="12" y2="22" />
-                    <path d="M5 17h14v-2l-2-2V5a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v8l-2 2v2z" />
-                    <line x1="9" y1="4" x2="15" y2="4" />
-                  </svg>
-                </button>
-              )}
+                  <line x1="12" y1="17" x2="12" y2="22" />
+                  <path d="M5 17h14v-2l-2-2V5a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v8l-2 2v2z" />
+                  <line x1="9" y1="4" x2="15" y2="4" />
+                </svg>
+              </button>
             </div>
 
             {/* Navigatie */}
-            <nav aria-label="Leeromgeving" className="relative flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-1">
+            <nav aria-label="Leeromgeving" className="relative mt-4 flex-1 space-y-2 overflow-y-auto overflow-x-hidden">
               {NAV_ITEMS.map((item) => {
                 const active = isActive(item.href);
                 return (
@@ -161,16 +185,25 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                       setCollapsed(true);
                       setHovered(false);
                     }}
-                    className={`group relative flex h-11 w-full items-center whitespace-nowrap rounded-xl font-semibold transition-colors duration-300 ${
+                    className={`group relative flex h-12 items-center whitespace-nowrap rounded-xl font-semibold transition-all duration-300 ${
+                      expanded ? "w-full" : "mx-auto w-12"
+                    } ${
                       active
                         ? "bg-lime text-ink"
                         : "text-paper/70 hover:bg-white/5 hover:text-paper"
                     }`}
                   >
-                    <div className="absolute left-1.5 flex h-8 w-8 items-center justify-center">
-                      <NavIcon item={item} className="h-8 w-8" hoverScale={!active} />
+                    {/* Icoon altijd verticaal in het midden (top-1/2 -translate-y-1/2), alleen horizontaal animeren */}
+                    <div className={`absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center transition-all duration-300 ${
+                      expanded ? "left-3" : "left-1/2 -translate-x-1/2"
+                    }`}>
+                      <NavIcon item={item} className="h-9 w-9" hoverScale={!active} />
                     </div>
-                    <span className={`ml-11 mt-0.5 text-[15px] transition-opacity duration-300 ${expanded ? "opacity-100" : "opacity-0"}`}>
+                    
+                    {/* Tekst ook verticaal gefixeerd zodat deze strak blijft staan tijdens animatie */}
+                    <span className={`absolute left-14 top-1/2 mt-0.5 -translate-y-1/2 text-[15px] transition-opacity duration-300 ${
+                      expanded ? "opacity-100" : "pointer-events-none opacity-0"
+                    }`}>
                       {item.label}
                     </span>
                   </Link>
@@ -185,14 +218,22 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               disabled={loggingOut}
               title={expanded ? undefined : "Uitloggen"}
               aria-label="Uitloggen"
-              className="relative mt-4 flex items-center gap-4 whitespace-nowrap rounded-xl p-3 text-left font-semibold text-paper/70 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+              className={`group relative mt-4 flex h-12 items-center whitespace-nowrap rounded-xl text-left font-semibold transition-all duration-300 disabled:opacity-50 ${
+                expanded ? "w-full text-paper/70 hover:bg-red-500/10 hover:text-red-400" : "mx-auto w-12 text-paper/70 hover:bg-red-500/10 hover:text-red-400"
+              }`}
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+              {/* Icoon altijd verticaal in het midden */}
+              <div className={`absolute top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center transition-all duration-300 ${
+                expanded ? "left-3" : "left-1/2 -translate-x-1/2"
+              }`}>
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
                 </svg>
               </div>
-              <span className={`text-[15px] transition-opacity duration-300 ${expanded ? "opacity-100" : "opacity-0"}`}>
+              
+              <span className={`absolute left-14 top-1/2 mt-0.5 -translate-y-1/2 text-[15px] transition-opacity duration-300 ${
+                expanded ? "opacity-100" : "pointer-events-none opacity-0"
+              }`}>
                 {loggingOut ? "Uitloggen..." : "Uitloggen"}
               </span>
             </button>
@@ -202,12 +243,15 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           {/* TOPBAR */}
           <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-paper/10 bg-[#18181B]/80 px-4 py-3 backdrop-blur sm:px-6 lg:px-10">
+            {/* Mobiel logo */}
             <Link href="/dashboard" aria-label="Naar overzicht" className="lg:hidden">
               <Image src="/brand/png/svg/logo.svg" alt="TheoriePlug" width={582} height={61} className="h-6 w-auto" />
             </Link>
-            <p className="hidden text-sm text-paper/60 lg:block">
-              Ingelogd als <span className="font-semibold text-paper">{user.email}</span>
-            </p>
+
+            {/* Dynamische Paginatitel */}
+            <h1 className="hidden font-display text-2xl font-black uppercase tracking-wide text-paper lg:block">
+              {pageTitle}
+            </h1>
 
             <div className="relative ml-auto">
               <button
