@@ -90,10 +90,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           <aside
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className={`fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden border-r p-4 transition-all duration-500 ease-in-out ${
+            className={`fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden p-4 transition-all duration-500 ease-in-out ${
               expanded 
-                ? "w-72 border-jade/20 bg-[#050b14]" 
-                : "w-24 border-lime/30 bg-[#060e1a]"
+                ? "w-72 bg-[#050b14]" 
+                : "w-24 bg-[#060e1a]"
             } ${collapsed && hovered ? "shadow-[14px_0_45px_rgba(0,0,0,0.7)]" : ""}`}
           >
            {/* Header: Logo & Punaise */}
