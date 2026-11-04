@@ -49,7 +49,8 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin");
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(next && next.startsWith("/") && !next.startsWith("//") ? next : "/admin");
       router.refresh();
     } catch {
       setError("Er ging iets mis. Probeer het later opnieuw.");

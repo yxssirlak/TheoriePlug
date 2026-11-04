@@ -34,6 +34,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PlatformUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const expanded = !collapsed || hovered;
 
   useEffect(() => {
     const supabase = createClient();
@@ -81,42 +84,124 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <UserProvider value={user}>
-      <div className="auth-bg min-h-screen text-paper lg:flex">
+      <div className="min-h-screen bg-[#18181B] text-paper lg:flex">
         {/* SIDEBAR (desktop) */}
-        <aside className="hidden w-72 shrink-0 flex-col border-r border-jade/20 bg-[#050b14]/70 p-5 backdrop-blur lg:sticky lg:top-0 lg:flex lg:h-screen">
-          <Link href="/dashboard" aria-label="Naar overzicht" className="mb-8 block px-2">
-            <Image src="/brand/png/svg/logo.svg" alt="TheoriePlug" width={582} height={61} priority className="h-8 w-auto" />
-          </Link>
-          <nav aria-label="Leeromgeving" className="flex-1 space-y-1 overflow-y-auto">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive(item.href) ? "page" : undefined}
-                className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold transition-all ${
-                  isActive(item.href)
-                    ? "bg-lime text-ink shadow-[0_0_24px_rgba(204,255,0,0.25)]"
-                    : "text-paper/70 hover:bg-jade/10 hover:text-paper"
-                }`}
-              >
-                <NavIcon item={item} className="h-8 w-8" hoverScale />
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <button
-            type="button"
-            onClick={logout}
-            disabled={loggingOut}
-            className="mt-4 rounded-xl border border-paper/15 px-4 py-2.5 text-left font-semibold text-paper/70 transition-colors hover:border-red-400/50 hover:text-red-300 disabled:opacity-50"
+        <div className={`hidden shrink-0 transition-all duration-300 ease-in-out lg:block ${collapsed ? "w-24" : "w-72"}`}>
+          <aside
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            className={`fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden border-r p-4 transition-all duration-500 ease-in-out ${
+              expanded 
+                ? "w-72 border-jade/20 bg-[#050b14]" 
+                : "w-24 border-lime/30 bg-[#060e1a]"
+            } ${collapsed && hovered ? "shadow-[14px_0_45px_rgba(0,0,0,0.7)]" : ""}`}
           >
-            {loggingOut ? "Uitloggen..." : "Uitloggen"}
-          </button>
-        </aside>
+           {/* Header: Logo & Punaise */}
+            <div className={`relative mb-8 flex w-full items-center transition-all duration-300 ${expanded ? "justify-between" : "justify-center"}`}>
+              <Link href="/dashboard" aria-label="Naar overzicht" className="flex items-center">
+                {expanded ? (
+                  <Image
+                    src="/brand/png/svg/logo.svg"
+                    alt="TheoriePlug"
+                    width={582}
+                    height={61}
+                    priority
+                    className="h-7 w-auto transition-opacity duration-300"
+                  />
+                ) : (
+                  <Image
+                    src="/brand/png/svg/logo-upright-b-limoen-tegel.svg"
+                    alt="TheoriePlug"
+                    width={48}
+                    height={48}
+                    priority
+                    className="h-12 w-12 object-contain transition-transform duration-300 hover:scale-105"
+                  />
+                )}
+              </Link>
+
+              {expanded && (
+                <button
+                  type="button"
+                  onClick={() => setCollapsed((prev) => !prev)}
+                  title={collapsed ? "Zijbalk vastpinnen" : "Zijbalk losmaken"}
+                  aria-label="Zijbalk vastpinnen"
+                  className="-mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent text-paper/40 transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`h-4 w-4 transition-transform duration-300 ${!collapsed ? "rotate-0" : "-rotate-45"}`}
+                    aria-hidden="true"
+                  >
+                    <line x1="12" y1="17" x2="12" y2="22" />
+                    <path d="M5 17h14v-2l-2-2V5a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v8l-2 2v2z" />
+                    <line x1="9" y1="4" x2="15" y2="4" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Navigatie */}
+            <nav aria-label="Leeromgeving" className="relative flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-1">
+              {NAV_ITEMS.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={expanded ? undefined : item.label}
+                    aria-label={item.label}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => {
+                      setCollapsed(true);
+                      setHovered(false);
+                    }}
+                    className={`group relative flex h-11 w-full items-center whitespace-nowrap rounded-xl font-semibold transition-colors duration-300 ${
+                      active
+                        ? "bg-lime text-ink"
+                        : "text-paper/70 hover:bg-white/5 hover:text-paper"
+                    }`}
+                  >
+                    <div className="absolute left-1.5 flex h-8 w-8 items-center justify-center">
+                      <NavIcon item={item} className="h-8 w-8" hoverScale={!active} />
+                    </div>
+                    <span className={`ml-11 mt-0.5 text-[15px] transition-opacity duration-300 ${expanded ? "opacity-100" : "opacity-0"}`}>
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Uitloggen */}
+            <button
+              type="button"
+              onClick={logout}
+              disabled={loggingOut}
+              title={expanded ? undefined : "Uitloggen"}
+              aria-label="Uitloggen"
+              className="relative mt-4 flex items-center gap-4 whitespace-nowrap rounded-xl p-3 text-left font-semibold text-paper/70 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+                </svg>
+              </div>
+              <span className={`text-[15px] transition-opacity duration-300 ${expanded ? "opacity-100" : "opacity-0"}`}>
+                {loggingOut ? "Uitloggen..." : "Uitloggen"}
+              </span>
+            </button>
+          </aside>
+        </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
           {/* TOPBAR */}
-          <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-jade/15 bg-[#050b14]/70 px-4 py-3 backdrop-blur sm:px-6 lg:px-10">
+          <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-paper/10 bg-[#18181B]/80 px-4 py-3 backdrop-blur sm:px-6 lg:px-10">
             <Link href="/dashboard" aria-label="Naar overzicht" className="lg:hidden">
               <Image src="/brand/png/svg/logo.svg" alt="TheoriePlug" width={582} height={61} className="h-6 w-auto" />
             </Link>
