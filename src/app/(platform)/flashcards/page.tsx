@@ -1,5 +1,5 @@
-import ComingSoon from "../../../components/dashboard/ComingSoon";
+import FlashcardsView from "../../../components/dashboard/FlashcardsView";
 
 export default function Page() {
-  return <ComingSoon title="Flashcards" text="Herhaal snel de belangrijkste regels en borden." />;
+  return <FlashcardsView />;
 }

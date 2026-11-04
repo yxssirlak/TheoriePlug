@@ -1,5 +1,5 @@
-import ComingSoon from "../../../components/dashboard/ComingSoon";
+import AdasView from "../../../components/dashboard/AdasView";
 
 export default function Page() {
-  return <ComingSoon title="ADAS" text="Alles over rijhulpsystemen en hoe ze werken." />;
+  return <AdasView />;
 }

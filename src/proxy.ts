@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Maak een initiële response aan
   let supabaseResponse = NextResponse.next({
     request,
@@ -37,6 +37,29 @@ export async function middleware(request: NextRequest) {
   // --- HIER BEPAAL JE WIE WAAR NAARTOE MAG ---
   const isPlatformRoute = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/cursus')
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/registreer')
+
+  // Beheerportaal: alleen toegankelijk voor gebruikers in de admins-tabel
+  const pathname = request.nextUrl.pathname
+  if (pathname.startsWith('/beheer') || pathname.startsWith('/admin')) {
+    const isAdminLogin = pathname.startsWith('/beheer/login')
+    let isAdmin = false
+    if (user) {
+      const { data } = await supabase.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
+      isAdmin = Boolean(data)
+    }
+
+    if (!isAdmin && !isAdminLogin) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/beheer/login'
+      return NextResponse.redirect(url)
+    }
+    if (isAdmin && isAdminLogin) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
 
   // 1. Niet ingelogd, maar probeert naar de cursus/dashboard te gaan? -> Stuur naar login
   if (!user && isPlatformRoute) {

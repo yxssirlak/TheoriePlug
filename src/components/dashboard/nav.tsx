@@ -21,7 +21,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/flashcards", sticker: "/brand/png/svg/sticker-flashcards.svg", label: "Flashcards", icon: svg(<><rect x="3" y="6" width="14" height="12" rx="2" /><path d="M7 3h14v12" /></>) },
   { href: "/cheat-sheet", sticker: "/brand/png/svg/sticker-cheatsheet.svg", label: "Cheat sheet", icon: svg(<><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4M9 13h6M9 17h6" /></>) },
   { href: "/voortgang", sticker: "/brand/png/svg/sticker-voortgang.svg", label: "Voortgang", icon: svg(<path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />) },
-  { href: "/instellingen", label: "Instellingen", icon: svg(<><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" /></>) },
+  { href: "/instellingen", sticker: "/brand/png/svg/sticker-instellingen.svg", label: "Instellingen", icon: svg(<><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" /></>) },
 ];
 
 // Items voor de mobiele onderbalk; "Instellingen" staat daar als "Meer"

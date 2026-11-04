@@ -1,5 +1,5 @@
-import ComingSoon from "../../../components/dashboard/ComingSoon";
+import ExamView from "../../../components/dashboard/ExamView";
 
 export default function Page() {
-  return <ComingSoon title="Oefenexamens" text="Oefen met examens die lijken op het echte CBR." />;
+  return <ExamView />;
 }

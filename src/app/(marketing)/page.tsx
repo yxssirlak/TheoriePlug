@@ -817,7 +817,7 @@ export default function LandingPage() {
           </nav>
           <div className="mt-6 flex justify-center"><PaymentBadges /></div>
           <p className="mt-6 text-sm opacity-50">
-            © 2026 TheoriePlug. Alle rechten voorbehouden.
+            <Link href="/beheer/login" aria-label="Beheerlogin" tabIndex={-1} className="cursor-text hover:text-inherit">©</Link> 2026 TheoriePlug. Alle rechten voorbehouden.
             {KVK_NUMMER && <> <span className="mx-1">•</span> KvK {KVK_NUMMER}</>}
           </p>
         </motion.div>
