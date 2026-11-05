@@ -38,14 +38,12 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
         <Link href="/" aria-label="Naar de homepage">
           <Image src="/brand/png/svg/logo.svg" alt="TheoriePlug" width={582} height={61} priority className="h-7 w-auto sm:h-8" />
         </Link>
-        <Link href="/#pakketten" className="group flex items-center gap-2 text-sm font-semibold text-paper/70 transition-colors hover:text-lime">
+        <Link href="/#pakketten" className="group flex items-center gap-2 font-display text-xl font-black uppercase tracking-wide text-paper/70 transition-colors hover:text-lime">
           <Image
             src="/brand/png/svg/sticker-pijl.svg"
             alt=""
             width={128}
             height={128}
-            // Voeg -rotate-12 toe (en group-hover:-rotate-12) om hem recht te trekken. 
-            // Is hij nog niet helemaal recht? Probeer dan -rotate-6 of juist rotate-12
             className="h-14 w-14 -scale-x-100 -rotate-8 transition-transform group-hover:-translate-x-1 group-hover:-scale-x-100 group-hover:-rotate-12"
           />
           Terug

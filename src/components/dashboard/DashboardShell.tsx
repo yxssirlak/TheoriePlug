@@ -5,8 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase";
+import { loadPackageTier } from "../../lib/course/data";
+import type { PackageTier } from "../../lib/course/types";
 import { MOBILE_NAV_HREFS, NAV_ITEMS, NavItem } from "./nav";
 import { PlatformUser, UserProvider } from "./user-context";
+import WelcomeModal from "./WelcomeModal"; 
 
 function NavIcon({ item, className, hoverScale = false }: { item: NavItem; className: string; hoverScale?: boolean }) {
   if (!item.sticker) return <span className="flex h-8 w-8 items-center justify-center text-jade">{item.icon}</span>;
@@ -32,6 +35,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<PlatformUser | null>(null);
+  const [tier, setTier] = useState<PackageTier | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -50,6 +54,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       }
       const email = data.user.email ?? "";
       setUser({ id: data.user.id, email, name: displayName(data.user.user_metadata, email) });
+      loadPackageTier(supabase, data.user.id)
+        .then((found) => !cancelled && setTier(found))
+        .catch(() => undefined);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -88,6 +95,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <UserProvider value={user}>
+      {/* De nieuwe Onboarding Modal */}
+      <WelcomeModal 
+        userId={user.id} 
+        onComplete={(newName) => setUser({ ...user, name: newName })} 
+      />
       <div className="min-h-screen bg-[#18181B] text-paper lg:flex">
         {/* SIDEBAR (desktop) */}
         <div className={`hidden shrink-0 transition-all duration-300 ease-in-out lg:block ${collapsed ? "w-24" : "w-72"}`}>
@@ -253,21 +265,44 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               {pageTitle}
             </h1>
 
+            <div className="ml-auto flex items-center gap-3">
             <div className="relative ml-auto">
               <button
                 type="button"
                 onClick={() => setMenuOpen((open) => !open)}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="flex items-center gap-2 rounded-full border border-jade/30 py-1 pl-1 pr-3 transition-colors hover:border-jade"
+                className="flex items-center gap-2 rounded-full border border-paper/10 py-1 pl-1 pr-3 transition-colors hover:border-paper/30"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-lime font-display text-sm font-extrabold text-ink">
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 font-display text-sm font-extrabold transition-all duration-300 ${
+                    tier === "max"
+                      ? "border-lime bg-lime/10 text-lime shadow-[0_0_12px_rgba(204,255,0,0.4)]"
+                      : tier === "boost"
+                      ? "border-jade bg-jade/10 text-jade shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                      : "border-paper/40 bg-transparent text-paper/80"
+                  }`}
+                >
                   {user.name.charAt(0).toUpperCase()}
-                </span>
+                </div>
                 <span className="hidden text-sm font-semibold sm:block">{user.name}</span>
+                <span aria-hidden="true" className="text-paper/40 text-xs">
+                  ▾
+                </span>
               </button>
+
               {menuOpen && (
                 <div role="menu" className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-paper/10 bg-[#0a121e] p-1.5 shadow-2xl">
+                  {tier && (
+                    <div className="px-3 py-3 border-b border-paper/10 mb-1">
+                      <p className="text-xs font-bold text-paper/50 uppercase tracking-wider mb-1">Actief Pakket</p>
+                      <p className={`font-display text-lg font-extrabold uppercase tracking-wide ${
+                        tier === "max" ? "text-lime" : tier === "boost" ? "text-jade" : "text-paper"
+                      }`}>
+                        {tier}
+                      </p>
+                    </div>
+                  )}
                   <Link role="menuitem" href="/instellingen" className="block rounded-xl px-3 py-2 text-sm font-semibold hover:bg-paper/10">
                     Instellingen
                   </Link>
@@ -286,6 +321,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 </div>
               )}
             </div>
+          </div>
           </header>
 
           <main className="flex-1 px-4 pb-28 pt-8 sm:px-6 lg:px-10 lg:pb-12">
