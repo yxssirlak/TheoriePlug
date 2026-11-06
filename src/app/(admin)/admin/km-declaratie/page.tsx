@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createClient } from "../../../../lib/supabase";
 import { calculateTrip, exportToCsv, type BusinessTrip, type Driver } from "../../../../lib/kilometers";
+import GlassDatePicker from "../../../../components/dashboard/GlassDatePicker";
 
 type RouteResult = {
   oneWayMeters: number;
@@ -517,9 +518,9 @@ function KilometerDeclaratieContent() {
           <h2 className="font-display text-lg font-bold">Nieuwe rit</h2>
           <div className="grid gap-4 md:grid-cols-3">
             <label className="text-sm font-semibold">
-              Datum
-              <input className={inputClass} type="date" required value={date} onChange={(event) => setDate(event.target.value)} />
-            </label>
+  Datum
+  <GlassDatePicker value={date} onChange={setDate} />
+</label>
             <label className="text-sm font-semibold">
               Bestuurder
               <CustomSelect
