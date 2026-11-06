@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createClient } from "../../../../lib/supabase";
 import { calculateTrip, exportToCsv, type BusinessTrip, type Driver } from "../../../../lib/kilometers";
 
@@ -286,7 +286,7 @@ async function fetchTrips(): Promise<BusinessTrip[]> {
   }
 }
 
-export default function KilometerDeclaratiePage() {
+function KilometerDeclaratieContent() {
   // Formulier states
   const [date, setDate] = useState("");
   const [driver, setDriver] = useState<Driver>("Yassir");
@@ -351,6 +351,7 @@ export default function KilometerDeclaratiePage() {
     }
   }
 
+  
   async function saveTrip() {
     if (!route || !date || !purpose.trim()) return;
     setBusy(true);
@@ -383,6 +384,7 @@ export default function KilometerDeclaratiePage() {
       setBusy(false);
     }
   }
+  
 
   // Gefilterde ritten berekenen
   // Unieke lijst van eerder gebruikte adressen (voor de adres-dropdowns)
@@ -491,8 +493,8 @@ export default function KilometerDeclaratiePage() {
     setSearchQuery("");
   }
 
-  const calculated = route ? calculateTrip(route.oneWayMeters, returnTrip) : null;
 
+  const calculated = route ? calculateTrip(route.oneWayMeters, returnTrip) : null;
   return (
     <div className="space-y-6">
       <div>
@@ -624,7 +626,7 @@ export default function KilometerDeclaratiePage() {
                   { value: "this_month", label: "Deze maand" },
                   { value: "last_3_months", label: "Afgelopen 3 maanden" },
                   { value: "last_6_months", label: "Afgelopen 6 maanden" },
-                  { value: "this_year", label: `Dit jaar (${new Date().getFullYear()})` },
+                  { value: "this_year", label: "Dit jaar" },
                   { value: "custom", label: "Aangepaste datumreeks..." },
                 ]}
               />
@@ -739,5 +741,12 @@ export default function KilometerDeclaratiePage() {
         )}
       </section>
     </div>
+  );
+}
+export default function KilometerDeclaratiePage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-paper/60">Pagina laden...</p>}>
+      <KilometerDeclaratieContent />
+    </Suspense>
   );
 }
