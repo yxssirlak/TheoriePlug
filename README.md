@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Km declaratie
+
+1. Apply the Supabase migration `supabase/migrations/20261106170000_create_business_trips.sql` to the project's database. The table is protected by RLS and accessible only to users in `public.admins`.
+2. Create an [openrouteservice](https://openrouteservice.org/dev/) API key with access to geocoding and directions. Add `OPENROUTESERVICE_API_KEY=your-key` to `.env.local` and to the server environment in production. Do not use a `NEXT_PUBLIC_` prefix or commit the key. Restart/redeploy after configuring it.
+3. Open **Beheer → Km declaratie**, enter full addresses, calculate the route, verify the resolved locations and save the trip. The addresses are sent to openrouteservice; its API limits and terms apply. The CSV export includes all loaded trips and uses semicolons, decimal commas and UTF-8 for Excel.
+
+The route is an estimate based on today's map, not a record of the actual distance driven. Return trips double the outgoing route. Amounts use a fixed €0.23/km rate for 2026 and are rounded to the nearest cent per trip; verify the rate for other years and circumstances. This feature alone is **not** a complete Belastingdienst mileage log: retain additional required information separately, including vehicle details, odometer readings and deviations from the usual route.
+
+Run the mileage calculation, routing mock and CSV tests with `node --test tests/kilometers.test.mjs` (Node.js 22.18 or newer).
+
 ## Getting Started
 
 First, run the development server:

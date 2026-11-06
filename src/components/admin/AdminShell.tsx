@@ -14,6 +14,7 @@ export const ADMIN_NAV = [
   { href: "/admin/cheat-sheet", label: "Cheat sheet", sticker: "/brand/png/svg/sticker-cheatsheet.svg" },
   { href: "/admin/adas", label: "ADAS", sticker: "/brand/png/svg/sticker-adas.svg" },
   { href: "/admin/gebruikers", label: "Gebruikers", sticker: "/brand/png/svg/sticker-gebruikers.svg" },
+  { href: "/admin/km-declaratie", label: "Km declaratie", sticker: "/brand/png/svg/sticker-car.svg" },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -247,6 +248,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </header>
+
+        <nav aria-label="Beheeromgeving mobiel" className="flex gap-2 overflow-x-auto border-b border-paper/10 px-4 py-3 lg:hidden">
+          {ADMIN_NAV.map((item) => (
+            <Link key={item.href} href={item.href} aria-current={isActive(item.href) ? "page" : undefined}
+              className={`shrink-0 rounded-lg px-3 py-2 text-sm font-semibold ${isActive(item.href) ? "bg-lime text-ink" : "bg-white/5 text-paper/70"}`}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-10">
           <div className="mx-auto max-w-7xl">{children}</div>

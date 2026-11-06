@@ -13,6 +13,7 @@ const CARDS = [
   { table: "cheat_sheet_items", label: "Cheat sheet-onderdelen", href: "/admin/cheat-sheet" },
   { table: "adas_items", label: "ADAS-onderdelen", href: "/admin/adas" },
   { table: "profiles", label: "Gebruikers", href: "/admin/gebruikers" },
+  { table: "business_trips", label: "Km declaratie", href: "/admin/km-declaratie" },
 ];
 
 export default function Page() {
