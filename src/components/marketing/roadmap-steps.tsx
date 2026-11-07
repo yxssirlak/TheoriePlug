@@ -19,8 +19,10 @@ import {
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import type { CarState } from "./Car3D";
+import type { BuildingState } from "./Cbrbuilding3D";
 
 const Car3D = dynamic(() => import("./Car3D"), { ssr: false });
+const CbrBuilding3D = dynamic(() => import("./Cbrbuilding3D"), { ssr: false });
 
 /* ==========================================================================
    CONFIG
@@ -36,10 +38,14 @@ const JADE = "#10b981";
 const PAINT = { edge: "#14161a", mid: "#2c3038", light: "#3d424c" };
 
 const VIEW_W = 1000;
-const VIEW_H = 1060;
+// Hoe langer de weg, hoe meer lucht tussen de stappen. 1 = oorspronkelijk, 1.35 = 35% langer.
+const ROAD_STRETCH = 1.35;
+const stretchY = (y: number) => Math.round(60 + (y - 60) * ROAD_STRETCH);
+// Alles onder de weg (parkeerplaats, gebouw) schuift mee naar beneden.
+const DY = stretchY(885) - 885;
+const VIEW_H = 1060 + DY; // zet ook VIEW_H in Car3D.tsx hierop!
 
-const ROAD_PATH =
-  "M 500 60 C 500 175, 370 175, 370 290 C 370 450, 560 450, 560 610 C 560 740, 460 740, 460 885";
+const ROAD_PATH = `M 500 ${stretchY(60)} C 500 ${stretchY(175)}, 370 ${stretchY(175)}, 370 ${stretchY(290)} C 370 ${stretchY(450)}, 560 ${stretchY(450)}, 560 ${stretchY(610)} C 560 ${stretchY(740)}, 460 ${stretchY(740)}, 460 ${stretchY(885)}`;
 
 const NEAR_FRAC = 0.09; 
 const LEAD_FRAC = 0.12; 
@@ -404,6 +410,7 @@ export default function RoadmapSteps() {
 
   const roadProgress = useTransform(smoothProgress, [0, FINISH_AT], [0, 1], { clamp: true });
 
+  const buildingState = useRef<BuildingState>({ parked: false });
   const carState = useRef<CarState>({
     x: 500,
     y: 60,
@@ -476,7 +483,7 @@ export default function RoadmapSteps() {
         const heading = Math.atan2(a.y - b.y, a.x - b.x) * (180 / Math.PI);
         return { x: pt.x, y: pt.y, rot: heading - 90 };
       };
-      setMarks({ teeth: place(335), zebra: place(735) });
+      setMarks({ teeth: place(stretchY(335)), zebra: place(stretchY(735)) });
       setCps(
         stopFracs.current.map((f) => {
           const pt = path.getPointAtLength(f * total);
@@ -579,6 +586,7 @@ carState.current.y = pt.y;
   useEffect(() => {
     carState.current.headlights = headlights;
     carState.current.parked = parked;
+    buildingState.current.parked = parked;
     carState.current.drive = drive;
   }, [headlights, parked, drive]);
 
@@ -659,7 +667,7 @@ carState.current.y = pt.y;
               <path ref={pathRef} d={ROAD_PATH} fill="none" stroke="none" />
 
               {/* Sfeerlichten */}
-              <ellipse cx="720" cy="830" rx="260" ry="190" fill="url(#tp-campus-aura)" />
+              <ellipse cx="720" cy={830 + DY} rx="260" ry="190" fill="url(#tp-campus-aura)" />
 
               {/* DE WEG */}
               <path d={ROAD_PATH} stroke="rgba(16,185,129,0.08)" strokeWidth={104} strokeLinecap="round" />
@@ -733,10 +741,12 @@ carState.current.y = pt.y;
 
               {/* Bomen */}
               {[
-                { x: 585, y: 190, r: 22 },
-                { x: 620, y: 225, r: 16 },
-                { x: 295, y: 455, r: 24 },
-                { x: 330, y: 490, r: 17 },
+                { x: 585, y: stretchY(190), r: 22 },
+                { x: 620, y: stretchY(225), r: 16 },
+                { x: 295, y: stretchY(455), r: 24 },
+                { x: 330, y: stretchY(490), r: 17 },
+                { x: 640, y: stretchY(520), r: 20 },
+                { x: 250, y: stretchY(720), r: 22 },
               ].map((tree, idx) => (
                 <g key={idx} transform={`translate(${tree.x}, ${tree.y})`}>
                   <circle cx="5" cy="7" r={tree.r} fill="rgba(0,0,0,0.55)" filter="blur(4px)" />
@@ -747,7 +757,7 @@ carState.current.y = pt.y;
               ))}
 
               {/* CBR PARKEERPLAATS & SLAGBOOM */}
-              <g>
+              <g transform={`translate(0 ${DY})`}>
                 <rect x={388} y={785} width={144} height={206} rx={16} fill="#14161a" stroke="#27272a" strokeWidth="2" />
                 <rect
                   x={416}
@@ -821,12 +831,8 @@ carState.current.y = pt.y;
                 </g>
               </g>
 
-              {/* =================================================================
-                  DE 2.5D TOP-DOWN CBR EXAMENCAMPUS
-                  ================================================================= */}
-              <g transform="translate(555, 675)">
-                <rect x="61" y="61" width="286" height="211" fill="rgba(0,0,0,0.58)" filter="url(#tp-soft-shadow)" />
-
+              {/* LED-looppad naar de ingang (het gebouw zelf is 3D, zie CbrBuilding3D) */}
+              <g transform={`translate(555, ${675 + DY})`}>
                 <path
                   d="M -48 180 L 42 180"
                   stroke={parked ? LIME : JADE}
@@ -836,64 +842,6 @@ carState.current.y = pt.y;
                   style={{ filter: parked ? "drop-shadow(0 0 8px #ccff00)" : "none" }}
                 />
                 <polygon points="28,175 38,180 28,185" fill={parked ? LIME : JADE} />
-
-                {/* Rectangular brick office footprint, viewed directly from above */}
-                <path d="M 65 255 L 330 255 L 342 267 L 77 267 Z" fill="#49382f" stroke="#382f2a" strokeWidth="2" />
-                <path d="M 330 65 L 342 77 L 342 267 L 330 255 Z" fill="#594238" stroke="#382f2a" strokeWidth="2" />
-                <path d="M 78 261 H 329 M 336 82 V 261" fill="none" stroke="#8a6758" strokeWidth="1" opacity="0.7" />
-                <rect x="65" y="65" width="265" height="190" fill="#75584c" stroke="#382f2a" strokeWidth="3" />
-                <path d="M 68 69 H 327 V 251 H 68 Z" fill="none" stroke="#a27c6a" strokeWidth="1" opacity="0.7" />
-
-                {/* Long rows of facade windows */}
-                {[0, 1, 2, 3, 4, 5].map((window) => {
-                  const x = 82 + window * 39;
-                  return (
-                    <g key={window}>
-                      <rect x={x} y="72" width="28" height="14" fill="#26353a" stroke="#b3a293" strokeWidth="2" />
-                      <path d={`M ${x + 14} 73 V 85`} stroke="#829195" strokeWidth="1" />
-                      <rect x={x} y="234" width="28" height="14" fill="#26353a" stroke="#b3a293" strokeWidth="2" />
-                      <path d={`M ${x + 14} 235 V 247`} stroke="#829195" strokeWidth="1" />
-                    </g>
-                  );
-                })}
-
-                {/* Flat roof and parapet */}
-                <rect x="79" y="94" width="237" height="132" fill="url(#tp-roof-grad)" stroke="#4c4a44" strokeWidth="2" />
-                <path d="M 85 100 H 310 V 220 H 85 Z" fill="none" stroke="#a7a49a" strokeWidth="1" opacity="0.65" />
-                <path d="M 86 105 H 309 M 86 215 H 309" stroke="#5d5c56" strokeWidth="1" />
-
-                {/* Small rooftop service building */}
-                <rect x="174" y="117" width="48" height="48" fill="#55534d" stroke="#3d3b36" strokeWidth="2" />
-                <path d="M 222 117 L 230 125 V 173 L 222 165 Z" fill="#46443f" stroke="#3d3b36" strokeWidth="1" />
-                <path d="M 174 165 L 222 165 L 230 173 L 182 173 Z" fill="#4a4842" stroke="#3d3b36" strokeWidth="1" />
-                <rect x="178" y="121" width="40" height="40" fill="#6d6b63" stroke="#aaa79e" strokeWidth="1" />
-                <path d="M 183 126 H 213 V 156 H 183 Z" fill="none" stroke="#929087" strokeWidth="1" />
-
-                {/* Small rooftop service units */}
-                {[0, 1].map((unit) => (
-                  <g key={unit} transform={`translate(${130 + unit * 92}, 143)`}>
-                    <rect x="0" y="0" width="48" height="34" fill="#74736b" stroke="#aaa79e" strokeWidth="1.5" />
-                    <rect x="4" y="4" width="40" height="26" fill="#555650" />
-                    <circle cx="24" cy="17" r="9" fill="#414541" stroke="#aaa79e" strokeWidth="1" />
-                    <path d="M 24 9 V 25 M 16 17 H 32 M 18 11 L 30 23 M 30 11 L 18 23" stroke="#aaa79e" strokeWidth="1" />
-                  </g>
-                ))}
-
-                {/* Campus bomen */}
-                {[
-                  { x: 18, y: 78, r: 18 },
-                  { x: 42, y: 52, r: 14 },
-                  { x: 25, y: 268, r: 20 },
-                  { x: 60, y: 282, r: 15 },
-                  { x: 382, y: 215, r: 22 },
-                ].map((t, i) => (
-                  <g key={i} transform={`translate(${t.x}, ${t.y})`}>
-                    <circle cx="4" cy="6" r={t.r} fill="rgba(0,0,0,0.6)" filter="blur(3px)" />
-                    <circle cx="0" cy="0" r={t.r} fill="#0d261f" stroke={JADE} strokeWidth="1.5" strokeOpacity="0.5" />
-                    <circle cx="-3" cy="-3" r={t.r * 0.6} fill="#13382d" />
-                    <circle cx="-5" cy="-5" r={t.r * 0.28} fill={LIME} opacity="0.35" />
-                  </g>
-                ))}
               </g>
               {!USE_3D_CAR && (
                 <g ref={carGRef} style={{ opacity: 0 }}>
@@ -902,6 +850,11 @@ carState.current.y = pt.y;
               )}
             </svg>
 
+
+            {/* 3D CBR-GEBOUW (onder de auto, boven de weg) */}
+            <div className="absolute inset-0 pointer-events-none z-10">
+              <CbrBuilding3D stateRef={buildingState} viewH={VIEW_H} offsetY={DY} />
+            </div>
             {/* DE 3D AUTO OP DE WEG */}
             {USE_3D_CAR && (
             <div
