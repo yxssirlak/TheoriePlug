@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "../../../../lib/supabase";
+import Notification from "../../../../components/ui/Notification";
 
 type UserRow = {
   id: string;
@@ -35,9 +36,9 @@ export default function Page() {
     <main className="p-6">
       <h1 className="font-display text-2xl font-extrabold text-lime">Gebruikers</h1>
       <p className="mt-1 text-sm text-paper/55">Overzicht van alle leerlingen en hun actieve pakket.</p>
-      {error && <p className="mt-4 text-red-300">{error}</p>}
+      {error && <Notification onDismiss={() => setError(null)}>{error}</Notification>}
       {loading && <p className="mt-4 text-paper/50">Laden...</p>}
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-paper/10">
+      <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-surface">
         <table className="w-full text-left text-sm">
           <thead className="bg-white/5 text-paper/60">
             <tr>
@@ -51,7 +52,7 @@ export default function Page() {
             {rows.map((row) => {
               const access = activePackage(row);
               return (
-                <tr key={row.id} className="border-t border-paper/10">
+                <tr key={row.id} className="border-t border-white/5 transition-colors hover:bg-white/[0.02]">
                   <td className="px-4 py-3 font-semibold">{[row.first_name, row.last_name].filter(Boolean).join(" ") || "—"}</td>
                   <td className="px-4 py-3">{access?.packages?.name ?? <span className="text-paper/40">Geen</span>}</td>
                   <td className="px-4 py-3">{access ? new Date(access.expires_at).toLocaleDateString("nl-NL") : "—"}</td>

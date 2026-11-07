@@ -58,7 +58,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
               MEEST GEKOZEN
             </span>
           )}
-          <div className="overflow-hidden rounded-3xl border border-lime/25 bg-[#050b14] shadow-[0_25px_60px_rgba(0,0,0,0.45)]">
+          <div className="overflow-hidden rounded-3xl border border-lime/25 bg-surface shadow-[0_25px_60px_rgba(0,0,0,0.45)]">
             {banner && (
               <div className="relative h-44 w-full sm:h-52">
                 <Image src={banner} alt="" fill priority sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover" />

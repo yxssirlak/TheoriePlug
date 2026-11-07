@@ -1,5 +1,6 @@
 import VideoCourse from "../../../components/videocursus/VideoCourse";
+import AuthenticatedPage from "../../../components/dashboard/AuthenticatedPage";
 
 export default function Page() {
-  return <VideoCourse />;
+  return <AuthenticatedPage><VideoCourse /></AuthenticatedPage>;
 }

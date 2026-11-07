@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../../lib/supabase";
+import Notification from "../../../../components/ui/Notification";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function AdminLoginPage() {
   };
 
   const inputClass =
-    "w-full rounded-xl border border-paper/15 bg-white/5 px-4 py-3 text-base text-paper placeholder:text-paper/30 outline-none transition-all hover:border-lime/50 focus:border-lime focus:bg-white/10 focus:ring-2 focus:ring-lime/30";
+    "w-full rounded-xl border border-white/10 bg-surface-raised px-4 py-3 text-base text-paper placeholder:text-paper/30 outline-none transition-all hover:border-white/20 focus:border-lime focus:ring-2 focus:ring-lime/30";
 
   return (
     <main className="auth-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12 text-paper">
@@ -68,7 +69,7 @@ export default function AdminLoginPage() {
           <Image src="/brand/png/svg/logo.svg" alt="TheoriePlug" width={582} height={61} priority className="h-9 w-auto" />
         </div>
 
-        <div className="rounded-3xl border border-lime/20 bg-white/[0.03] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur sm:p-8">
+        <div className="rounded-3xl border border-white/10 bg-surface p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:p-8">
           <span className="inline-block rounded-full bg-lime px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-ink">
             Beheer
           </span>
@@ -77,11 +78,7 @@ export default function AdminLoginPage() {
           </h1>
           <p className="mt-2 text-paper/60">Alleen voor medewerkers van TheoriePlug.</p>
 
-          {error && (
-            <div role="alert" className="mt-6 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
-              {error}
-            </div>
-          )}
+          {error && <Notification onDismiss={() => setError(null)}>{error}</Notification>}
 
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-5">
             <div>

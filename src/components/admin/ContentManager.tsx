@@ -23,7 +23,7 @@ type Props = {
 };
 
 const inputClass =
-  "w-full rounded-xl border border-paper/15 bg-white/5 px-4 py-2.5 text-paper placeholder:text-paper/30 outline-none transition-all focus:border-lime focus:ring-2 focus:ring-lime/30";
+  "w-full rounded-xl border border-white/10 bg-surface-raised px-4 py-2.5 text-paper placeholder:text-paper/30 outline-none transition-all focus:border-lime focus:ring-2 focus:ring-lime/30";
 const primaryButton =
   "rounded-full bg-lime px-5 py-2 text-sm font-bold text-ink transition-transform hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -244,7 +244,7 @@ function ItemEditor({
   };
 
   return (
-    <div className="space-y-4 rounded-3xl border border-jade/30 bg-white/[0.03] p-6">
+    <div className="space-y-4 rounded-3xl border border-white/10 bg-surface p-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-xl font-extrabold">{singular} bewerken</h2>
         <button onClick={save} disabled={busy} className={primaryButton}>

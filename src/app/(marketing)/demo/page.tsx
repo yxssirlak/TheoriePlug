@@ -31,7 +31,7 @@ export default function DemoPage() {
 
           <div className="mt-12 grid max-w-3xl gap-4 sm:grid-cols-3">
             {stickers.map((sticker, index) => (
-              <div key={sticker} className="flex aspect-square items-center justify-center rounded-3xl border border-jade/25 bg-[#050b14] p-6">
+              <div key={sticker} className="flex aspect-square items-center justify-center rounded-3xl border border-jade/25 bg-surface p-6">
                 <Image
                   src={`/brand/png/svg/sticker-${sticker}.svg`}
                   alt=""

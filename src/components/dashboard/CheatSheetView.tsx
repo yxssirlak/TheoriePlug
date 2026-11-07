@@ -26,7 +26,7 @@ function Sheet({ items }: { items: Item[] }) {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Zoek in de cheat sheet..."
-        className="mb-8 w-full max-w-md rounded-xl border border-paper/15 bg-white/5 px-4 py-2.5 text-paper outline-none placeholder:text-paper/30 focus:border-lime"
+        className="mb-8 w-full max-w-md rounded-xl border border-white/10 bg-surface-raised px-4 py-2.5 text-paper outline-none placeholder:text-paper/30 focus:border-lime"
       />
       {groups.length === 0 && <p className="text-paper/60">Niets gevonden.</p>}
       <div className="space-y-10">
@@ -35,7 +35,7 @@ function Sheet({ items }: { items: Item[] }) {
             <h2 className="mb-4 font-display text-xl font-extrabold text-lime">{category}</h2>
             <div className="grid gap-4 md:grid-cols-2">
               {list.map((item) => (
-                <article key={item.id} className="rounded-2xl border border-jade/25 bg-[#0a121e] p-5">
+                <article key={item.id} className="rounded-2xl border border-jade/25 bg-surface p-5">
                   <h3 className="mb-2 font-display text-lg font-extrabold">{item.title}</h3>
                   {item.body && <RichText text={item.body} className="text-sm text-paper/80" />}
                 </article>

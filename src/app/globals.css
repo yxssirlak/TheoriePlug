@@ -39,13 +39,15 @@
 }
 
 :root {
-  --background: #18181b;
+  --background: #0e0e11;
   --foreground: #f4f4f5;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: #18181b;
+  --color-surface-raised: #202024;
   --color-lime: #ccff00;
   --color-jade: #10b981;
   --color-ink: #18181b;
@@ -62,6 +64,42 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+.video-progress {
+  height: 4px;
+  appearance: none;
+  border-radius: 9999px;
+}
+
+.video-progress:focus-visible {
+  outline: 2px solid #ccff00;
+  outline-offset: 4px;
+}
+
+.video-progress::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  appearance: none;
+  border-radius: 50%;
+  background: #ccff00;
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.video-progress::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: #ccff00;
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.video-progress:hover::-webkit-slider-thumb,
+.video-progress:focus-visible::-webkit-slider-thumb { opacity: 1; }
+.video-progress:hover::-moz-range-thumb,
+.video-progress:focus-visible::-moz-range-thumb { opacity: 1; }
 
 .font-display {
   text-transform: uppercase;
@@ -85,7 +123,7 @@ body {
     radial-gradient(60% 70% at 85% 25%, rgba(16, 185, 129, 0.40), transparent 70%),
     radial-gradient(45% 55% at 95% 85%, rgba(204, 255, 0, 0.22), transparent 70%),
     radial-gradient(40% 50% at 5% 100%, rgba(16, 185, 129, 0.18), transparent 70%),
-    #050b14;
+    #0e0e11;
 }
 
 .corner-cut {
@@ -175,3 +213,13 @@ body {
 }
 .page-enter { animation: page-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) { .page-enter { animation: none; } }
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg) scale(0.95); }
+  25% { transform: rotate(-3deg) scale(0.95); }
+  75% { transform: rotate(3deg) scale(0.95); }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.4s ease-in-out infinite;
+}

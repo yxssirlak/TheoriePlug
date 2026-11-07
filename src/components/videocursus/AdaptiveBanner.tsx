@@ -15,7 +15,7 @@ type Props = {
 export default function AdaptiveBanner({ tier, tree, mastery, completed, onSelect }: Props) {
   if (!isAdaptive(tier)) {
     return (
-      <section className="relative overflow-hidden rounded-3xl border border-lime/30 bg-gradient-to-br from-lime/15 via-[#0a121e] to-[#0a121e] p-6">
+      <section className="relative overflow-hidden rounded-3xl border border-lime/30 bg-gradient-to-br from-lime/15 via-[#18181b] to-[#18181b] p-6">
         <span className="rounded-full bg-lime px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-ink">Boost &amp; Max</span>
         <h2 className="mt-3 font-display text-xl font-extrabold sm:text-2xl">Upgrade naar Adaptief</h2>
         <p className="mt-2 max-w-xl text-paper/70">
@@ -45,7 +45,7 @@ export default function AdaptiveBanner({ tier, tree, mastery, completed, onSelec
     .filter((item) => item !== null);
 
   return (
-    <section className="rounded-3xl border border-jade/30 bg-gradient-to-br from-jade/15 via-[#0a121e] to-[#0a121e] p-6">
+    <section className="rounded-3xl border border-jade/30 bg-gradient-to-br from-jade/15 via-[#18181b] to-[#18181b] p-6">
       <div className="flex items-center gap-3">
         <span className="rounded-full bg-jade px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-ink">Adaptief</span>
         <h2 className="font-display text-xl font-extrabold sm:text-2xl">Jouw persoonlijke focuspunten</h2>

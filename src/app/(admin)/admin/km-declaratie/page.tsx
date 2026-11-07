@@ -4,6 +4,8 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormE
 import { createClient } from "../../../../lib/supabase";
 import { calculateTrip, exportToCsv, type BusinessTrip, type Driver } from "../../../../lib/kilometers";
 import GlassDatePicker from "../../../../components/dashboard/GlassDatePicker";
+import Notification from "../../../../components/ui/Notification";
+import GlassSelect from "../../../../components/ui/GlassSelect";
 
 type RouteResult = {
   oneWayMeters: number;
@@ -13,72 +15,7 @@ type RouteResult = {
 
 type PeriodPreset = "all" | "this_month" | "last_3_months" | "last_6_months" | "this_year" | "custom";
 
-const inputClass = "mt-1 w-full rounded-xl border border-paper/20 bg-white/5 px-3 py-2 text-paper outline-none focus:border-lime";
-// 1. Mooie vervanger voor alle standaard <select> dropdowns
-function CustomSelect<T extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: T;
-  onChange: (val: T) => void;
-  options: { value: T; label: string }[];
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
-
-  const selectedLabel = options.find((o) => o.value === value)?.label ?? value;
-
-  return (
-    <div ref={ref} className="relative mt-1">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-xl border border-paper/20 bg-white/5 px-3 py-2 text-left text-sm text-paper outline-none transition hover:border-paper/40 focus:border-lime"
-      >
-        <span className="truncate">{selectedLabel}</span>
-        <svg className={`ml-2 h-4 w-4 shrink-0 text-lime transition-transform duration-200 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open && (
-        <ul className="absolute z-50 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-paper/20 bg-[#0b101b] p-1.5 shadow-2xl backdrop-blur-xl">
-          {options.map((opt) => {
-            const active = opt.value === value;
-            return (
-              <li
-                key={opt.value}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-                className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm transition ${
-                  active ? "bg-lime font-semibold text-ink" : "text-paper/90 hover:bg-white/10"
-                }`}
-              >
-                <span className="truncate">{opt.label}</span>
-                {active && (
-                  <svg className="h-4 w-4 shrink-0 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
-}
-
+const inputClass = "mt-1 w-full rounded-xl border border-white/10 bg-surface-raised px-3 py-2 text-paper outline-none focus:border-lime";
 // 2. Slim adresveld met dropdown van eerder gebruikte adressen
 // 2. Slim adresveld met dropdown van favoriete en eerder gebruikte adressen
 function AddressInput({
@@ -128,7 +65,7 @@ function AddressInput({
     <div ref={ref} className="relative mt-1">
       <div className="relative flex items-center">
         <input
-          className="w-full rounded-xl border border-paper/20 bg-white/5 py-2 pl-3 pr-16 text-sm font-normal text-paper outline-none transition hover:border-paper/40 focus:border-lime"
+          className="w-full rounded-xl border border-white/10 bg-surface-raised py-2 pl-3 pr-16 text-sm font-normal text-paper outline-none transition hover:border-white/20 focus:border-lime"
           required
           minLength={3}
           maxLength={250}
@@ -173,7 +110,7 @@ function AddressInput({
       </div>
 
       {open && hasDropdownItems && (
-        <ul className="absolute z-50 mt-1.5 max-h-64 w-full overflow-auto rounded-xl border border-paper/20 bg-[#0b101b] p-1.5 shadow-2xl">
+        <ul className="absolute z-50 mt-1.5 max-h-64 w-full overflow-auto rounded-xl border border-paper/20 bg-surface p-1.5 shadow-2xl">
           {favList.length > 0 && (
             <>
               <li className="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-400/80">
@@ -509,11 +446,10 @@ function KilometerDeclaratieContent() {
         <p className="mt-2">Adressen worden voor de berekening naar openrouteservice verstuurd. Controleer de gevonden locaties voordat je opslaat.</p>
       </div>
 
-      {error && <p role="alert" className="rounded-xl bg-red-500/10 p-3 text-red-300">{error}</p>}
-      {message && <p role="status" className="rounded-xl bg-lime/10 p-3 text-lime">{message}</p>}
+      {error ? <Notification onDismiss={() => setError(null)}>{error}</Notification> : message && <Notification type="success" onDismiss={() => setMessage(null)}>{message}</Notification>}
 
       {/* Formulier Nieuwe Rit */}
-      <form onSubmit={calculate} className="space-y-4 rounded-2xl border border-paper/10 bg-white/[0.03] p-5">
+      <form onSubmit={calculate} className="space-y-4 rounded-2xl border border-white/10 bg-surface p-5">
         <fieldset disabled={busy || loading} className="space-y-4 disabled:opacity-70">
           <h2 className="font-display text-lg font-bold">Nieuwe rit</h2>
           <div className="grid gap-4 md:grid-cols-3">
@@ -521,9 +457,9 @@ function KilometerDeclaratieContent() {
   Datum
   <GlassDatePicker value={date} onChange={setDate} />
 </label>
-            <label className="text-sm font-semibold">
+            <div className="text-sm font-semibold">
               Bestuurder
-              <CustomSelect
+              <GlassSelect label="Bestuurder" disabled={busy || loading}
                 value={driver}
                 onChange={setDriver}
                 options={[
@@ -531,7 +467,7 @@ function KilometerDeclaratieContent() {
                   { value: "Danté", label: "Danté" },
                 ]}
               />
-            </label>
+            </div>
             <label className="text-sm font-semibold">
               Doel van de rit
               <input className={inputClass} required maxLength={250} value={purpose} onChange={(event) => setPurpose(event.target.value)} placeholder="Bijv. klantafspraak" />
@@ -602,11 +538,11 @@ function KilometerDeclaratieContent() {
         </div>
 
         {/* Filterbalk */}
-        <div className="space-y-4 rounded-2xl border border-paper/10 bg-white/[0.03] p-4">
+        <div className="space-y-4 rounded-2xl border border-white/10 bg-surface p-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="text-xs font-semibold text-paper/70">
+            <div className="text-xs font-semibold text-paper/70">
               Bestuurder
-              <CustomSelect
+              <GlassSelect label="Filter bestuurder"
                 value={filterDriver}
                 onChange={setFilterDriver}
                 options={[
@@ -615,11 +551,11 @@ function KilometerDeclaratieContent() {
                   { value: "Danté", label: "Danté" },
                 ]}
               />
-            </label>
+            </div>
 
-            <label className="text-xs font-semibold text-paper/70">
+            <div className="text-xs font-semibold text-paper/70">
               Periode
-              <CustomSelect
+              <GlassSelect label="Periode"
                 value={periodPreset}
                 onChange={setPeriodPreset}
                 options={[
@@ -631,11 +567,11 @@ function KilometerDeclaratieContent() {
                   { value: "custom", label: "Aangepaste datumreeks..." },
                 ]}
               />
-            </label>
+            </div>
 
-            <label className="text-xs font-semibold text-paper/70">
+            <div className="text-xs font-semibold text-paper/70">
               Type rit
-              <CustomSelect
+              <GlassSelect label="Type rit"
                 value={filterReturn}
                 onChange={setFilterReturn}
                 options={[
@@ -644,7 +580,7 @@ function KilometerDeclaratieContent() {
                   { value: "NO", label: "Alleen enkele reis" },
                 ]}
               />
-            </label>
+            </div>
 
             <label className="text-xs font-semibold text-paper/70">
               Zoeken (adres of doel)
@@ -682,7 +618,7 @@ function KilometerDeclaratieContent() {
 
         {/* Totaalkaarten (Samenvatting van huidige filter) */}
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-paper/10 bg-white/[0.03] p-4">
+          <div className="rounded-2xl border border-white/10 bg-surface p-4">
             <p className="text-xs text-paper/60">Aantal ritten (gefilterd)</p>
             <p className="mt-1 font-display text-2xl font-bold text-paper">{filteredTrips.length}</p>
           </div>
@@ -690,7 +626,7 @@ function KilometerDeclaratieContent() {
             <p className="text-xs text-paper/70">Totaal aantal kilometers</p>
             <p className="mt-1 font-display text-2xl font-bold text-lime">{formatDistance(totals.meters)} km</p>
           </div>
-          <div className="rounded-2xl border border-paper/10 bg-white/[0.03] p-4">
+          <div className="rounded-2xl border border-white/10 bg-surface p-4">
             <p className="text-xs text-paper/60">Totaal te declareren bedrag</p>
             <p className="mt-1 font-display text-2xl font-bold text-paper">{formatMoney(totals.cents)}</p>
           </div>
@@ -702,7 +638,7 @@ function KilometerDeclaratieContent() {
         ) : filteredTrips.length === 0 ? (
           <p className="text-sm text-paper/60">Geen ritten gevonden voor deze selectie.</p>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-paper/10">
+          <div className="overflow-x-auto rounded-2xl border border-white/10 bg-surface">
             <table className="w-full text-left text-sm">
               <thead className="bg-white/5 text-paper/60">
                 <tr>
@@ -713,7 +649,7 @@ function KilometerDeclaratieContent() {
               </thead>
               <tbody>
                 {filteredTrips.map((trip) => (
-                  <tr key={trip.id} className="border-t border-paper/10">
+                  <tr key={trip.id} className="border-t border-white/5 transition-colors hover:bg-white/[0.02]">
                     <td className="whitespace-nowrap px-4 py-3">{trip.trip_date}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <span className="rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-lime">

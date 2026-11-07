@@ -15,7 +15,7 @@ export default function AdasView() {
         {(items) => (
           <div className="grid gap-5 md:grid-cols-2">
             {items.map((item) => (
-              <article key={item.id} className="overflow-hidden rounded-3xl border border-jade/25 bg-[#0a121e]">
+              <article key={item.id} className="overflow-hidden rounded-3xl border border-jade/25 bg-surface">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 {item.image_url && <img src={item.image_url} alt="" className="aspect-video w-full object-cover" />}
                 <div className="p-5">

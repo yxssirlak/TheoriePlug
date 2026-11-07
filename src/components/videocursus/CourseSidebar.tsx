@@ -40,7 +40,7 @@ export default function CourseSidebar({ tree, completed, selectedLessonId, onSel
         const open = isOpen(topic.id);
 
         return (
-          <div key={topic.id} className="overflow-hidden rounded-2xl border border-jade/20 bg-[#0a121e]">
+          <div key={topic.id} className="overflow-hidden rounded-2xl border border-jade/20 bg-surface">
             <button
               type="button"
               onClick={() => toggle(topic.id)}

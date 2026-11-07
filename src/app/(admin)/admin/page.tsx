@@ -37,7 +37,7 @@ export default function Page() {
       <p className="mt-1 text-paper/60">Kies een onderdeel om aan te passen.</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {CARDS.map((card) => (
-          <Link key={card.table} href={card.href} className="rounded-2xl border border-jade/25 bg-white/[0.03] p-5 transition-colors hover:border-lime">
+          <Link key={card.table} href={card.href} className="rounded-2xl border border-white/10 bg-surface p-5 transition-colors hover:border-lime">
             <p className="font-display text-3xl font-extrabold text-lime">{counts[card.table] ?? "–"}</p>
             <p className="mt-1 text-sm text-paper/70">{card.label}</p>
           </Link>

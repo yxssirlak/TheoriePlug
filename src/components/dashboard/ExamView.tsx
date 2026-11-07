@@ -37,7 +37,7 @@ function Exam({ pool }: { pool: Question[] }) {
 
   if (!questions) {
     return (
-      <div className="max-w-xl rounded-3xl border border-lime/30 bg-[#0a121e] p-8">
+      <div className="max-w-xl rounded-3xl border border-lime/30 bg-surface p-8">
         <h2 className="font-display text-2xl font-extrabold">Klaar voor een oefenexamen?</h2>
         <p className="mt-2 text-paper/70">
           Je krijgt {Math.min(25, pool.length)} vragen uit een bank van {pool.length}. Je ziet na elk antwoord direct de uitleg.
@@ -52,7 +52,7 @@ function Exam({ pool }: { pool: Question[] }) {
   const finished = index >= questions.length;
   if (finished) {
     return (
-      <div className="max-w-xl rounded-3xl border border-lime/30 bg-[#0a121e] p-8 text-center">
+      <div className="max-w-xl rounded-3xl border border-lime/30 bg-surface p-8 text-center">
         <p className="font-display text-5xl font-extrabold text-lime">
           {score}/{questions.length}
         </p>
@@ -68,7 +68,7 @@ function Exam({ pool }: { pool: Question[] }) {
   const answered = picked !== null;
 
   return (
-    <div className="max-w-2xl rounded-3xl border border-jade/30 bg-[#0a121e] p-6 sm:p-8">
+    <div className="max-w-2xl rounded-3xl border border-jade/30 bg-surface p-6 sm:p-8">
       <p className="text-sm font-semibold text-jade">
         Vraag {index + 1} van {questions.length}
       </p>

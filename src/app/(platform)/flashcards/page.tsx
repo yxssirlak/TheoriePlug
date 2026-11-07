@@ -1,5 +1,6 @@
 import FlashcardsView from "../../../components/dashboard/FlashcardsView";
+import AuthenticatedPage from "../../../components/dashboard/AuthenticatedPage";
 
 export default function Page() {
-  return <FlashcardsView />;
+  return <AuthenticatedPage><FlashcardsView /></AuthenticatedPage>;
 }

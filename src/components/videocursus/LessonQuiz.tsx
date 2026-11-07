@@ -41,7 +41,7 @@ export default function LessonQuiz({ questions, onFinish, onClose }: Props) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 140, damping: 20 }}
       aria-label="Kennis-check"
-      className="rounded-3xl border border-lime/30 bg-[#0a121e] p-6 shadow-[0_0_40px_rgba(204,255,0,0.08)]"
+      className="rounded-3xl border border-lime/30 bg-surface p-6 shadow-[0_0_40px_rgba(204,255,0,0.08)]"
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-xl font-extrabold">

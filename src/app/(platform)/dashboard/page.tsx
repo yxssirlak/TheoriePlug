@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUser } from "../../../components/dashboard/user-context";
+import AuthenticatedPage from "../../../components/dashboard/AuthenticatedPage";
 import { createClient } from "../../../lib/supabase"; // Zorg dat dit pad klopt!
 
 const QUICK_ACTIONS = [
@@ -30,6 +31,10 @@ function greeting(): string {
 }
 
 export default function DashboardPage() {
+  return <AuthenticatedPage><DashboardContent /></AuthenticatedPage>;
+}
+
+function DashboardContent() {
   const user = useUser();
   const tip = TIPS[new Date().getDate() % TIPS.length];
   const [success, setSuccess] = useState(false);
@@ -77,7 +82,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {success && (
-        <div role="status" className="flex items-start justify-between gap-4 rounded-2xl border border-lime/40 bg-lime/10 px-5 py-4">
+        <div role="status" className="fixed bottom-4 right-4 z-[90] flex w-[calc(100%-2rem)] max-w-sm items-start justify-between gap-4 rounded-2xl border border-lime/40 bg-[#0a1f1a]/95 px-5 py-4 shadow-2xl backdrop-blur-xl sm:bottom-6 sm:right-6">
           <p className="font-semibold text-lime">
             Betaling gelukt! Je pakket is actief. Veel succes met oefenen!
           </p>
@@ -118,7 +123,7 @@ export default function DashboardPage() {
           const hasValue = stat.value !== null && stat.value !== undefined;
 
           return (
-            <div key={stat.id} className="relative flex min-h-[140px] flex-col justify-between overflow-hidden rounded-3xl border border-paper/5 bg-[#0a121e] p-5 shadow-lg transition-transform hover:-translate-y-1">
+            <div key={stat.id} className="relative flex min-h-[140px] flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-surface p-5 shadow-lg transition-transform hover:-translate-y-1">
               
               <div className="mb-4">
                 <p className="text-xs font-bold uppercase tracking-widest text-paper/50">{stat.label}</p>
@@ -207,10 +212,10 @@ export default function DashboardPage() {
       
       {/* LAATSTE ACTIVITEIT / HERVATTEN */}
       <section>
-        <div className="group relative flex flex-col justify-between gap-5 overflow-hidden rounded-3xl border border-lime/30 bg-gradient-to-r from-[#0a121e] via-[#0a121e] to-lime/10 p-5 shadow-[0_0_20px_rgba(204,255,0,0.05)] transition-all hover:border-lime/50 hover:shadow-[0_0_30px_rgba(204,255,0,0.15)] sm:flex-row sm:items-center sm:p-6 lg:p-8">
+        <div className="group relative flex flex-col justify-between gap-5 overflow-hidden rounded-3xl border border-white/10 bg-surface p-5 transition-all hover:border-lime/50 hover:shadow-[0_0_30px_rgba(204,255,0,0.15)] sm:flex-row sm:items-center sm:p-6 lg:p-8">
           
           {/* Achtergrond glow (zichtbaar bij hover) */}
-          <div className="absolute -right-20 -top-20 z-0 h-40 w-40 rounded-full bg-lime/20 blur-3xl transition-all duration-700 group-hover:bg-lime/40" />
+          <div className="absolute -right-20 -top-20 z-0 h-40 w-40 rounded-full bg-lime/20 opacity-0 blur-3xl transition-opacity duration-700 group-hover:opacity-100" />
 
           <div className="relative z-10 flex items-center gap-4 sm:gap-6">
             
@@ -274,7 +279,7 @@ export default function DashboardPage() {
               className={`group rounded-2xl border p-5 transition-all hover:-translate-y-1 ${
                 action.accent
                   ? "border-lime/50 bg-lime/10 hover:border-lime hover:shadow-[0_0_30px_rgba(204,255,0,0.2)]"
-                  : "border-jade/20 bg-gradient-to-br from-jade/10 to-transparent hover:border-jade/60 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]"
+                  : "border-white/10 bg-surface hover:border-white/25 hover:bg-white/[0.06]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -288,11 +293,11 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-jade/20 border-l-4 border-l-jade bg-jade/5 p-5">
+        <div className="rounded-2xl border border-white/10 border-l-4 border-l-jade bg-surface p-5">
           <h2 className="font-display text-lg font-extrabold text-jade">Tip van de dag</h2>
           <p className="mt-2 text-paper/70">{tip}</p>
         </div>
-        <div className="rounded-2xl border border-jade/20 bg-gradient-to-br from-jade/10 to-transparent p-5">
+        <div className="rounded-2xl border border-white/10 bg-surface p-5">
           <h2 className="font-display text-lg font-extrabold">Jouw pakket</h2>
           <p className="mt-2 text-paper/70">Bekijk of wijzig je pakket of koop extra oefentijd.</p>
           <Link href="/instellingen" className="mt-4 inline-block rounded-full border border-paper/30 px-5 py-2 text-sm font-bold transition-colors hover:border-jade hover:bg-jade hover:text-ink">

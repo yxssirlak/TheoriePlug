@@ -7,6 +7,7 @@ import { resolveVideo } from "../../lib/course/video";
 import { isAdaptive, type Lesson, type LessonQuestion, type PackageTier } from "../../lib/course/types";
 import LessonQuiz from "./LessonQuiz";
 import RichText from "./RichText";
+import BrandedVideoPlayer from "./BrandedVideoPlayer";
 
 type Props = {
   lesson: Lesson;
@@ -45,10 +46,10 @@ export default function LessonPlayer({
 
   return (
     <div className="space-y-6">
-      <div className="overflow-hidden rounded-3xl border border-jade/20 bg-black">
-        {video?.kind === "file" && (
-          <video key={video.src} src={video.src} controls playsInline onEnded={handleEnded} className="aspect-video w-full bg-black" />
-        )}
+      {video?.kind === "file" ? (
+        <BrandedVideoPlayer key={video.src} src={video.src} title={lesson.title} onEnded={handleEnded} />
+      ) : (
+      <div className="overflow-hidden rounded-3xl border border-white/10 bg-black">
         {video?.kind === "embed" && (
           <iframe
             src={video.src}
@@ -62,6 +63,7 @@ export default function LessonPlayer({
           <div className="flex aspect-video items-center justify-center text-paper/50">Deze video is nog niet beschikbaar.</div>
         )}
       </div>
+      )}
 
       <div>
         <p className="text-sm font-semibold uppercase tracking-wider text-jade">{breadcrumb}</p>
@@ -105,7 +107,7 @@ export default function LessonPlayer({
       </AnimatePresence>
 
       {lesson.description && (
-        <section className="rounded-3xl border border-paper/10 bg-[#0a121e] p-6">
+        <section className="rounded-3xl border border-paper/10 bg-surface p-6">
           <h2 className="mb-3 font-display text-lg font-extrabold">Over deze video</h2>
           <RichText text={lesson.description} className="text-paper/80" />
         </section>

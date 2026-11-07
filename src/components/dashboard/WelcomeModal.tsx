@@ -70,8 +70,8 @@ export default function WelcomeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050b14]/90 p-4 backdrop-blur-md">
-      <div className="w-full max-w-md rounded-3xl border border-jade/20 bg-[#0a121e] shadow-[0_0_40px_rgba(16,185,129,0.15)]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+      <div className="w-full max-w-md rounded-3xl border border-white/15 bg-surface shadow-[0_0_40px_rgba(0,0,0,0.8)]">
         <div className="p-8">
           
           <div className="mb-6 flex justify-center">
@@ -106,7 +106,7 @@ export default function WelcomeModal({
                 placeholder="Jouw voornaam"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-paper/10 bg-[#18181B] px-4 py-3 font-semibold text-paper placeholder:text-paper/30 focus:border-lime focus:outline-none focus:ring-1 focus:ring-lime"
+                className="w-full rounded-xl border border-white/10 bg-surface-raised px-4 py-3 font-semibold text-paper placeholder:text-paper/30 focus:border-lime focus:outline-none focus:ring-1 focus:ring-lime"
               />
             </div>
 

@@ -4,7 +4,7 @@ import { useCallback, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const inputClass =
-  "w-full rounded-xl border border-paper/15 bg-white/5 px-4 py-2.5 text-paper placeholder:text-paper/30 outline-none transition-all focus:border-lime focus:ring-2 focus:ring-lime/30";
+  "w-full rounded-xl border border-white/10 bg-surface-raised px-4 py-2.5 text-paper placeholder:text-paper/30 outline-none transition-all focus:border-lime focus:ring-2 focus:ring-lime/30";
 
 type DialogState =
   | { kind: "prompt"; title: string; label: string; value: string; confirmLabel: string }
@@ -73,7 +73,7 @@ export function useDialogs() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className="w-full max-w-md rounded-3xl border border-lime/30 bg-[#0a121e] p-6 text-paper shadow-[0_0_60px_rgba(204,255,0,0.12)]"
+            className="w-full max-w-md rounded-3xl border border-white/15 bg-surface p-6 text-paper shadow-[0_0_40px_rgba(0,0,0,0.8)]"
           >
             <h2 className="font-display text-xl font-extrabold">{state.title}</h2>
 

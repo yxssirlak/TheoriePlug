@@ -42,7 +42,7 @@ export default function CookieConsent() {
           animate={{ y: 0, opacity: 1, rotate: -1 }}
           exit={{ y: 40, opacity: 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 24 }}
-          className="fixed inset-x-3 bottom-3 z-[200] mx-auto max-w-sm rounded-[1.25rem] bg-lime p-4 text-ink shadow-[0_20px_60px_rgba(0,0,0,0.45)] sm:inset-x-auto sm:bottom-6 sm:left-6 sm:mx-0 sm:w-[26rem] sm:p-4"
+          className="fixed bottom-3 right-3 z-[200] w-[calc(100%-1.5rem)] max-w-sm rounded-[1.25rem] bg-lime p-4 text-ink shadow-[0_20px_60px_rgba(0,0,0,0.45)] sm:bottom-6 sm:right-6 sm:w-[26rem] sm:p-4"
         >
           <h2 className="font-display text-lg font-extrabold leading-tight">
             Even over cookies

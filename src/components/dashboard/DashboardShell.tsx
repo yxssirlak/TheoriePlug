@@ -79,10 +79,13 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   if (!user) {
     return (
-      <div className="auth-bg flex min-h-screen items-center justify-center text-paper/60">
-        <span aria-hidden="true" className="mr-3 h-5 w-5 animate-spin rounded-full border-2 border-paper/20 border-t-lime" />
-        Leeromgeving laden...
-      </div>
+      <UserProvider value={null}>
+        <div className="auth-bg flex min-h-screen items-center justify-center text-paper/60">
+          <span aria-hidden="true" className="mr-3 h-5 w-5 animate-spin rounded-full border-2 border-paper/20 border-t-lime" />
+          Leeromgeving laden...
+        </div>
+        {children}
+      </UserProvider>
     );
   }
 
@@ -100,16 +103,16 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         userId={user.id} 
         onComplete={(newName) => setUser({ ...user, name: newName })} 
       />
-      <div className="min-h-screen bg-[#18181B] text-paper lg:flex">
+      <div className="min-h-screen bg-background text-paper lg:flex">
         {/* SIDEBAR (desktop) */}
         <div className={`hidden shrink-0 transition-all duration-300 ease-in-out lg:block ${collapsed ? "w-24" : "w-72"}`}>
           <aside
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className={`fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden p-4 transition-all duration-500 ease-in-out ${
+            className={`fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden border-r border-white/10 p-4 transition-all duration-500 ease-in-out ${
               expanded 
-                ? "w-72 bg-[#050b14]" 
-                : "w-24 bg-[#060e1a]"
+                ? "w-72 bg-surface"
+                : "w-24 bg-surface"
             } ${collapsed && hovered ? "shadow-[14px_0_45px_rgba(0,0,0,0.7)]" : ""}`}
           >
             {/* Geanimeerde achtergrond glows (gesplitst voor smooth crossfade) */}
@@ -201,7 +204,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                       expanded ? "w-full" : "mx-auto w-12"
                     } ${
                       active
-                        ? "bg-lime text-ink"
+                        ? "border border-lime/50 bg-lime/10 text-lime shadow-[0_0_20px_rgba(204,255,0,0.1)]"
                         : "text-paper/70 hover:bg-white/5 hover:text-paper"
                     }`}
                   >
@@ -254,7 +257,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           {/* TOPBAR */}
-          <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-paper/10 bg-[#18181B]/80 px-4 py-3 backdrop-blur sm:px-6 lg:px-10">
+          <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-white/10 bg-surface/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-10">
             {/* Mobiel logo */}
             <Link href="/dashboard" aria-label="Naar overzicht" className="lg:hidden">
               <Image src="/brand/png/svg/logo.svg" alt="TheoriePlug" width={582} height={61} className="h-6 w-auto" />
@@ -292,7 +295,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               </button>
 
               {menuOpen && (
-                <div role="menu" className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-paper/10 bg-[#0a121e] p-1.5 shadow-2xl">
+                <div role="menu" className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-paper/10 bg-surface p-1.5 shadow-2xl">
                   {tier && (
                     <div className="px-3 py-3 border-b border-paper/10 mb-1">
                       <p className="text-xs font-bold text-paper/50 uppercase tracking-wider mb-1">Actief Pakket</p>
@@ -330,7 +333,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         </div>
 
         {/* ONDERBALK (mobiel) */}
-        <nav aria-label="Snelle navigatie" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-jade/20 bg-[#050b14]/90 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+        <nav aria-label="Snelle navigatie" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
           {NAV_ITEMS.filter((item) => MOBILE_NAV_HREFS.includes(item.href)).map((item) => (
             <Link
               key={item.href}

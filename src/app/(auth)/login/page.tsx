@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabase";
+import Notification from "../../../components/ui/Notification";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 6;
@@ -105,14 +106,7 @@ export default function LoginPage() {
           </h1>
           <p className="mt-2 text-paper/60">Log in en ga verder met je theorie.</p>
 
-          {formError && (
-            <div
-              role="alert"
-              className="mt-6 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300"
-            >
-              {formError}
-            </div>
-          )}
+          {formError && <Notification onDismiss={() => setFormError(null)}>{formError}</Notification>}
 
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-5">
             <div>

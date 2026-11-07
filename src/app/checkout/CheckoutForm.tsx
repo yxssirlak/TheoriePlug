@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createClient } from "../../lib/supabase";
 import { checkoutSchema, type CheckoutInput } from "../../lib/checkout-schema";
+import Notification from "../../components/ui/Notification";
 
 const METHODS = [
   { id: "ideal", label: "iDEAL | Wero", hint: "Betaal direct via je eigen bank", badge: "iDEAL" },
@@ -80,7 +81,7 @@ export default function CheckoutForm({ packageSlug, packageName, priceLabel }: P
   const fieldClass = (hasError: boolean) => `${inputBase} ${hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500/30" : "border-paper/15"}`;
 
   return (
-    <section aria-label="Bestelling bevestigen" className="rounded-3xl border border-jade/25 bg-[#050b14] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:p-8">
+    <section aria-label="Bestelling bevestigen" className="rounded-3xl border border-jade/25 bg-surface p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:p-8">
      <h2 className="font-display text-center text-2xl font-extrabold sm:text-3xl">
         Laatste check<span className="text-lime"> <br /> plug je pakket</span>
       </h2>
@@ -240,14 +241,14 @@ export default function CheckoutForm({ packageSlug, packageName, priceLabel }: P
         </div>
 
         {serverError && (
-          <div role="alert" className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
+          <Notification onDismiss={() => setServerError(null)}>
             {serverError}{" "}
             {emailTaken && (
               <Link href="/login" className="font-bold underline">
                 Inloggen
               </Link>
             )}
-          </div>
+          </Notification>
         )}
 
         <div className="flex justify-end pt-2">

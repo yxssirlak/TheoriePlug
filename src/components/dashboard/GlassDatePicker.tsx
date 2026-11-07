@@ -45,7 +45,7 @@ export default function GlassDatePicker({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between rounded-xl border border-paper/10 bg-[#18181B] px-4 py-3 font-semibold transition-colors focus:border-lime focus:outline-none focus:ring-1 focus:ring-lime"
+        className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-surface-raised px-4 py-3 font-semibold transition-colors focus:border-lime focus:outline-none focus:ring-1 focus:ring-lime"
       >
         <span className={value ? "text-paper" : "text-paper/30"}>{formatDisplay()}</span>
         <svg className="h-5 w-5 text-paper/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,7 +57,7 @@ export default function GlassDatePicker({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 top-full z-50 mt-2 w-[280px] rounded-2xl border border-jade/30 bg-[#050b14]/80 p-4 shadow-[0_0_30px_rgba(16,185,129,0.2)] backdrop-blur-xl">
+          <div className="absolute left-0 top-full z-50 mt-2 w-[280px] rounded-2xl border border-white/15 bg-surface/95 p-4 shadow-2xl backdrop-blur-xl">
             
             <div className="mb-4 flex items-center justify-between">
               <button type="button" onClick={handlePrev} className="p-1 text-paper/60 transition-colors hover:text-lime">

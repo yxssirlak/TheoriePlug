@@ -10,6 +10,18 @@ The route is an estimate based on today's map, not a record of the actual distan
 
 Run the mileage calculation, routing mock and CSV tests with `node --test tests/kilometers.test.mjs` (Node.js 22.18 or newer).
 
+## Flashcards
+
+Apply `supabase/migrations/20261107000000_flashcard_system.sql` after the existing migrations. Existing flashcards are retained and grouped by their previous category (or **Overig**). In **Beheer → Flashcards**, create or edit subjects, optionally link a video lesson, and publish cards for learners. Lesson links only open published lessons available to the learner. Uploaded images use the existing public `course-media` bucket.
+
+Apply `supabase/migrations/20261107010000_reset_flashcard_category.sql` to enable restarting completed subjects.
+
+Apply `supabase/migrations/20261107020000_bulk_delete_flashcards.sql` for bulk deletion. In the card overview, select individual or all visible cards and confirm deletion; selections remain active when filtering, and deletion also removes the selected cards' learner progress. Upload an image by dragging it into the editor or choosing a file, then save the card. Removing an image from a card does not delete the file from the public storage bucket.
+
+Learners with an active package can practise published cards under **Flashcards**, either across all subjects or in one chosen subject. A subject is marked complete when every currently published card has a saved mastery assessment; empty subjects are not marked complete. Completed subjects are excluded from **Alle kaarten**. New published cards reopen a subject. Selecting a completed subject and choosing **Opnieuw oefenen** clears that learner's saved assessments for the subject, including unpublished cards, and makes it available again. Session counters count assessments, including repetitions; when a subject is completed during an all-cards session, previously mastered cards from it are credited and removed from the remaining queue. A linked lesson that is unavailable displays a warning in the video course. Deleting a card also deletes its saved learner progress; a subject containing cards cannot be deleted.
+
+Run the session queue tests with `node --test tests/flashcards.test.mjs` (Node.js 22.18 or newer).
+
 ## Getting Started
 
 First, run the development server:

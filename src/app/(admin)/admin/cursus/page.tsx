@@ -164,7 +164,7 @@ export default function AdminCoursePage() {
           </button>
           {loading && <p className="text-paper/50">Laden...</p>}
           {tree.map((topic, ti) => (
-            <div key={topic.id} className="rounded-2xl border border-paper/10 bg-white/[0.03] p-3">
+            <div key={topic.id} className="rounded-2xl border border-white/10 bg-surface p-3">
               <div className="flex items-center justify-between gap-2">
                 <button
                   onClick={() => setSelection({ kind: "topic", id: topic.id })}
@@ -247,7 +247,7 @@ function TopicEditor({
   const [icon, setIcon] = useState(topic.icon ?? "");
   const [description, setDescription] = useState(topic.description ?? "");
   return (
-    <div className="max-w-xl space-y-4 rounded-3xl border border-jade/30 bg-white/[0.03] p-6">
+    <div className="max-w-xl space-y-4 rounded-3xl border border-white/10 bg-surface p-6">
       <h2 className="font-display text-xl font-extrabold">Hoofdonderwerp bewerken</h2>
       <Field label="Titel">
         <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -260,7 +260,8 @@ function TopicEditor({
       </Field>
       <button className={primaryButton} onClick={() => title.trim() && onSave({ title, icon: icon || null, description: description || null })}>
         Opslaan
-      </button>
+      </button>
+
     </div>
   );
 }
