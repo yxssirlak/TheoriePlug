@@ -8,6 +8,7 @@ import { availableCards, cardsForCategory, completedCategoryIds, fetchAllPages, 
 import { PageHeader } from "./ContentState";
 import { useUser } from "./user-context";
 import Notification from "../ui/Notification";
+import PageSkeleton from "../ui/PageSkeleton";
 
 type Data = { categories: FlashcardCategory[]; cards: Flashcard[]; progress: FlashcardProgress[] };
 type State = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: Data };
@@ -35,7 +36,7 @@ export default function FlashcardsView() {
   return (
     <>
       <PageHeader title="Flashcards" text="Oefen per onderwerp en ontdek wat je al beheerst." />
-      {state.status === "loading" && <p className="text-paper/60">Flashcards laden...</p>}
+      {state.status === "loading" && <PageSkeleton kind="flashcards" header={false} />}
       {state.status === "error" && <Notification>Laden mislukt: {state.message}</Notification>}
       {state.status === "ready" && <Deck data={state.data} userId={user.id} />}
     </>

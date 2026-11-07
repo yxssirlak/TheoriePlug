@@ -7,6 +7,7 @@ import { loadCourseTree } from "../../../../lib/course/data";
 import type { TopicNode } from "../../../../lib/course/types";
 import LessonEditor, { Field, inputClass, primaryButton } from "../../../../components/admin/LessonEditor";
 import { useDialogs } from "../../../../components/admin/Dialog";
+import { SkeletonList } from "../../../../components/ui/PageSkeleton";
 
 type Selection = { kind: "topic" | "subtopic" | "lesson"; id: string } | null;
 type Table = "topics" | "subtopics" | "lessons";
@@ -162,7 +163,7 @@ export default function AdminCoursePage() {
           <button onClick={addTopic} className={primaryButton}>
             + Hoofdonderwerp
           </button>
-          {loading && <p className="text-paper/50">Laden...</p>}
+          {loading && <div role="status" aria-label="Cursus laden"><span className="sr-only">Cursus laden...</span><SkeletonList /></div>}
           {tree.map((topic, ti) => (
             <div key={topic.id} className="rounded-2xl border border-white/10 bg-surface p-3">
               <div className="flex items-center justify-between gap-2">

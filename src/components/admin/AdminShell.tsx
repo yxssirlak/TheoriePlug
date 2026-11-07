@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase";
+import LinkPending from "../ui/LinkPending";
 
 export const ADMIN_NAV = [
   { href: "/admin", label: "Overzicht", sticker: "/brand/png/svg/sticker-overzicht.svg" },
@@ -167,6 +168,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   }`}>
                     {item.label}
                   </span>
+                  <LinkPending />
                 </Link>
               );
             })}
@@ -252,8 +254,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         <nav aria-label="Beheeromgeving mobiel" className="flex gap-2 overflow-x-auto border-b border-paper/10 px-4 py-3 lg:hidden">
           {ADMIN_NAV.map((item) => (
             <Link key={item.href} href={item.href} aria-current={isActive(item.href) ? "page" : undefined}
-              className={`shrink-0 rounded-lg px-3 py-2 text-sm font-semibold ${isActive(item.href) ? "border border-lime/50 bg-lime/10 text-lime" : "bg-white/5 text-paper/70"}`}>
+              className={`relative shrink-0 rounded-lg px-3 py-2 text-sm font-semibold ${isActive(item.href) ? "border border-lime/50 bg-lime/10 text-lime" : "bg-white/5 text-paper/70"}`}>
               {item.label}
+              <LinkPending />
             </Link>
           ))}
         </nav>

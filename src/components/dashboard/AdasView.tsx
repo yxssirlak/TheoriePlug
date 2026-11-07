@@ -11,7 +11,7 @@ export default function AdasView() {
   return (
     <>
       <PageHeader title="ADAS" text="Alles over rijhulpsystemen." />
-      <ContentState state={state} empty="De ADAS-uitleg wordt nog gevuld. Kom snel terug!">
+      <ContentState state={state} skeleton="cards" empty="De ADAS-uitleg wordt nog gevuld. Kom snel terug!">
         {(items) => (
           <div className="grid gap-5 md:grid-cols-2">
             {items.map((item) => (

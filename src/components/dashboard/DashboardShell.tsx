@@ -10,6 +10,8 @@ import type { PackageTier } from "../../lib/course/types";
 import { MOBILE_NAV_HREFS, NAV_ITEMS, NavItem } from "./nav";
 import { PlatformUser, UserProvider } from "./user-context";
 import WelcomeModal from "./WelcomeModal"; 
+import PageSkeleton, { Skeleton, SkeletonList, skeletonForPath } from "../ui/PageSkeleton";
+import LinkPending from "../ui/LinkPending";
 
 function NavIcon({ item, className, hoverScale = false }: { item: NavItem; className: string; hoverScale?: boolean }) {
   if (!item.sticker) return <span className="flex h-8 w-8 items-center justify-center text-jade">{item.icon}</span>;
@@ -80,9 +82,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   if (!user) {
     return (
       <UserProvider value={null}>
-        <div className="auth-bg flex min-h-screen items-center justify-center text-paper/60">
-          <span aria-hidden="true" className="mr-3 h-5 w-5 animate-spin rounded-full border-2 border-paper/20 border-t-lime" />
-          Leeromgeving laden...
+        <div className="min-h-screen bg-background lg:flex">
+          <aside aria-hidden="true" className="hidden w-72 shrink-0 border-r border-white/10 bg-surface p-6 lg:block">
+            <Skeleton className="mb-10 h-8 w-40" /><SkeletonList rows={8} />
+          </aside>
+          <div className="min-w-0 flex-1">
+            <div className="h-16 border-b border-white/10 bg-surface" />
+            <div className="mx-auto max-w-6xl px-4 pb-28 pt-8 sm:px-6 lg:px-10"><PageSkeleton kind={skeletonForPath(pathname)} /></div>
+          </div>
         </div>
         {children}
       </UserProvider>
@@ -221,6 +228,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                     }`}>
                       {item.label}
                     </span>
+                    <LinkPending />
                   </Link>
                 );
               })}
@@ -339,19 +347,21 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               key={item.href}
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
-              className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold ${isActive(item.href) ? "text-lime" : "text-paper/60"}`}
+              className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold ${isActive(item.href) ? "text-lime" : "text-paper/60"}`}
             >
               {item.icon}
               {item.label}
+              <LinkPending />
             </Link>
           ))}
           <Link
             href={settings.href}
             aria-current={isActive(settings.href) ? "page" : undefined}
-            className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold ${isActive(settings.href) ? "text-lime" : "text-paper/60"}`}
+            className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold ${isActive(settings.href) ? "text-lime" : "text-paper/60"}`}
           >
             {settings.icon}
             Meer
+            <LinkPending />
           </Link>
         </nav>
       </div>

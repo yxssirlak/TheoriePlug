@@ -22,7 +22,18 @@ Learners with an active package can practise published cards under **Flashcards*
 
 Run the session queue tests with `node --test tests/flashcards.test.mjs` (Node.js 22.18 or newer).
 
+## Cheat sheet boek
+
+Apply `supabase/migrations/20261107220000_cheat_sheet_pages.sql` after the existing migrations. In **Beheer → Cheat sheet**, create pages, set their order, colours and columns, and add text, images, highlighted notes or interactive answer cards. Rearrange blocks by dragging their handle or using the arrow buttons. Upload JPG, PNG, WebP or GIF images up to 10 MB, add an accessible description, and save and publish the page. The preview reflects unsaved changes. Existing cheat sheet items remain available and editable separately.
+
+Published pages are available to authenticated learners with an active package; administrators can also see drafts. Images use a separate private bucket and temporary signed links, with database and storage policies enforcing access. Signed links remain usable until they expire, and anyone who can view content can still copy it or make screenshots: this is not copy protection. Deleting a page or replacing an image does not remove previously uploaded files from storage.
+
+Run the ordering tests with `node --test tests/cheat-sheet.test.mjs` (Node.js 22.18 or newer).
+
 ## Getting Started
+
+The admin and learner routes use page-specific `loading.tsx` fallbacks for navigation and shared skeletons in `src/components/ui/PageSkeleton.tsx` while client-side data loads. Keep skeletons aligned with the corresponding page layout when changing a page. Navigation links use Next.js prefetching and show a small pending indicator if a transition has to wait; authentication and database access checks remain unchanged. Skeleton animation respects the reduced-motion preference.
+Run `node --test tests/page-skeleton.test.mjs` to check portal fallback coverage and key skeleton layouts.
 
 First, run the development server:
 

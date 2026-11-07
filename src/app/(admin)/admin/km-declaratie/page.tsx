@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import PageSkeleton, { TableSkeleton } from "../../../../components/ui/PageSkeleton";
 import { createClient } from "../../../../lib/supabase";
 import { calculateTrip, exportToCsv, type BusinessTrip, type Driver } from "../../../../lib/kilometers";
 import GlassDatePicker from "../../../../components/dashboard/GlassDatePicker";
@@ -634,7 +635,7 @@ function KilometerDeclaratieContent() {
 
         {/* Tabel */}
         {loading ? (
-          <p className="text-sm text-paper/60">Ritten laden...</p>
+          <TableSkeleton />
         ) : filteredTrips.length === 0 ? (
           <p className="text-sm text-paper/60">Geen ritten gevonden voor deze selectie.</p>
         ) : (
@@ -682,7 +683,7 @@ function KilometerDeclaratieContent() {
 }
 export default function KilometerDeclaratiePage() {
   return (
-    <Suspense fallback={<p className="text-sm text-paper/60">Pagina laden...</p>}>
+    <Suspense fallback={<PageSkeleton kind="kilometers" />}>
       <KilometerDeclaratieContent />
     </Suspense>
   );

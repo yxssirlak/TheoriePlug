@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "../../../../lib/supabase";
 import Notification from "../../../../components/ui/Notification";
+import { TableSkeleton } from "../../../../components/ui/PageSkeleton";
 
 type UserRow = {
   id: string;
@@ -37,8 +38,7 @@ export default function Page() {
       <h1 className="font-display text-2xl font-extrabold text-lime">Gebruikers</h1>
       <p className="mt-1 text-sm text-paper/55">Overzicht van alle leerlingen en hun actieve pakket.</p>
       {error && <Notification onDismiss={() => setError(null)}>{error}</Notification>}
-      {loading && <p className="mt-4 text-paper/50">Laden...</p>}
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-surface">
+      {loading ? <div className="mt-6"><TableSkeleton /></div> : <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-surface">
         <table className="w-full text-left text-sm">
           <thead className="bg-white/5 text-paper/60">
             <tr>
@@ -62,7 +62,7 @@ export default function Page() {
             })}
           </tbody>
         </table>
-      </div>
+      </div>}
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { UsePublishedState } from "../../lib/course/usePublished";
 import Notification from "../ui/Notification";
+import PageSkeleton, { type SkeletonKind } from "../ui/PageSkeleton";
 
 export function PageHeader({ title, text }: { title: string; text: string }) {
   return (
@@ -12,8 +13,8 @@ export function PageHeader({ title, text }: { title: string; text: string }) {
 }
 
 // Toont laad-, fout- en leegstatus; rendert `children` pas als er items zijn
-export function ContentState<T>({ state, empty, children }: { state: UsePublishedState<T>; empty: string; children: (items: T[]) => ReactNode }) {
-  if (state.status === "loading") return <p className="text-paper/60">Laden...</p>;
+export function ContentState<T>({ state, empty, skeleton, children }: { state: UsePublishedState<T>; empty: string; skeleton: SkeletonKind; children: (items: T[]) => ReactNode }) {
+  if (state.status === "loading") return <PageSkeleton kind={skeleton} header={false} />;
   if (state.status === "error") {
     return (
       <Notification>

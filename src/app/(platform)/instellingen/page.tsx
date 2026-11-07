@@ -5,6 +5,7 @@ import { createClient } from "../../../lib/supabase";
 import GlassDatePicker from "../../../components/dashboard/GlassDatePicker";
 import Notification from "../../../components/ui/Notification";
 import AuthenticatedPage from "../../../components/dashboard/AuthenticatedPage";
+import PageSkeleton from "../../../components/ui/PageSkeleton";
 
 export default function SettingsPage() {
   return <AuthenticatedPage><SettingsContent /></AuthenticatedPage>;
@@ -71,13 +72,8 @@ function SettingsContent() {
     }
   };
 
-  // Laat een subtiele lader zien zolang de data uit Supabase wordt getrokken
   if (initialLoad) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-paper/20 border-t-lime" />
-      </div>
-    );
+    return <PageSkeleton kind="settings" />;
   }
 
   return (

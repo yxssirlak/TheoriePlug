@@ -128,7 +128,7 @@ export default function ExamView() {
   return (
     <>
       <PageHeader title="Oefenexamens" text="Oefen met vragen zoals bij het CBR." />
-      <ContentState state={state} empty="Er zijn nog geen examenvragen beschikbaar. Kom snel terug!">
+      <ContentState state={state} skeleton="exam" empty="Er zijn nog geen examenvragen beschikbaar. Kom snel terug!">
         {(items) => <Exam pool={items} />}
       </ContentState>
     </>

@@ -1,10 +1,13 @@
 import ContentManager from "../../../../components/admin/ContentManager";
+import CheatSheetManager from "../../../../components/admin/CheatSheetManager";
 
 export default function Page() {
   return (
+    <>
+    <CheatSheetManager />
     <ContentManager
       table="cheat_sheet_items"
-      title="Cheat sheet"
+      title="Bestaande cheat sheet onderdelen"
       singular="Onderdeel"
       intro="Beheer alle regels op één blad."
       titleKey="title"
@@ -15,5 +18,6 @@ export default function Page() {
         { key: "category", label: "Categorie", kind: "text" },
       ]}
     />
+    </>
   );
 }

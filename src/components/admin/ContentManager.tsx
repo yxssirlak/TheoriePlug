@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "../../lib/supabase";
 import { uploadMedia } from "../../lib/course/storage";
 import { useDialogs } from "./Dialog";
+import { SkeletonList } from "../ui/PageSkeleton";
 
 type Row = Record<string, unknown> & { id: string; sort_order: number; is_published: boolean };
 
@@ -127,7 +128,7 @@ export default function ContentManager({ table, title, intro, singular, fields, 
             </button>
             <input className={inputClass} placeholder="Zoeken..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          {loading && <p className="text-paper/50">Laden...</p>}
+          {loading && <div role="status" aria-label="Onderdelen laden"><span className="sr-only">Onderdelen laden...</span><SkeletonList /></div>}
           <ul className="space-y-1">
             {visible.map(({ row, index }) => (
               <li key={row.id} className="flex items-center justify-between gap-2 rounded-xl border border-paper/10 bg-white/[0.03] px-3 py-2">
@@ -151,7 +152,7 @@ export default function ContentManager({ table, title, intro, singular, fields, 
         </aside>
 
         <section className="min-w-0">
-          {selected ? (
+          {loading ? null : selected ? (
             <ItemEditor
               key={selected.id}
               row={selected}

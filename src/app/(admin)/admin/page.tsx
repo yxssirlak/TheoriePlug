@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "../../../lib/supabase";
+import { Skeleton } from "../../../components/ui/PageSkeleton";
+import Notification from "../../../components/ui/Notification";
 
 const CARDS = [
   { table: "topics", label: "Hoofdonderwerpen", href: "/admin/cursus" },
@@ -18,6 +20,7 @@ const CARDS = [
 
 export default function Page() {
   const [counts, setCounts] = useState<Record<string, number | null>>({});
+  const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -25,7 +28,10 @@ export default function Page() {
       supabase
         .from(table)
         .select("*", { count: "exact", head: true })
-        .then(({ count }) => setCounts((previous) => ({ ...previous, [table]: count })));
+        .then(({ count, error }) => {
+          setCounts((previous) => ({ ...previous, [table]: error ? null : count }));
+          if (error) setErrors((previous) => [...previous, `${table}: ${error.message}`]);
+        });
     });
   }, []);
 
@@ -35,10 +41,11 @@ export default function Page() {
         Beheer<span className="text-lime">dashboard</span>
       </h1>
       <p className="mt-1 text-paper/60">Kies een onderdeel om aan te passen.</p>
+      {errors.length > 0 && <Notification onDismiss={() => setErrors([])}>Aantallen laden mislukt: {errors.join("; ")}</Notification>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {CARDS.map((card) => (
           <Link key={card.table} href={card.href} className="rounded-2xl border border-white/10 bg-surface p-5 transition-colors hover:border-lime">
-            <p className="font-display text-3xl font-extrabold text-lime">{counts[card.table] ?? "–"}</p>
+            <p className="font-display text-3xl font-extrabold text-lime">{card.table in counts ? counts[card.table] ?? "–" : <span role="status" aria-label={`${card.label} laden`}><Skeleton className="h-9 w-14" /></span>}</p>
             <p className="mt-1 text-sm text-paper/70">{card.label}</p>
           </Link>
         ))}

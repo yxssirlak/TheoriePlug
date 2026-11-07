@@ -8,6 +8,7 @@ import { fetchAllPages, updateCardSelection, type Flashcard, type FlashcardCateg
 import { useDialogs } from "./Dialog";
 import GlassSelect from "../ui/GlassSelect";
 import Notification from "../ui/Notification";
+import PageSkeleton from "../ui/PageSkeleton";
 
 type Lesson = { id: string; title: string; is_published: boolean };
 type CategoryDraft = Omit<FlashcardCategory, "id"> & { id?: string };
@@ -168,7 +169,7 @@ export default function FlashcardsManager() {
       {dialogs}
       <div><h1 className="font-display text-2xl font-extrabold text-lime">Flashcards beheren</h1><p className="mt-1 text-sm text-paper/60">Onderwerpen, videolessen en kaarten voor het leerlingportaal.</p></div>
       {error ? <Notification onDismiss={() => setError(null)}>{error}</Notification> : notice && <Notification type={notice.type} onDismiss={() => setNotice(null)}>{notice.text}</Notification>}
-      {loading ? <p>Laden...</p> : (
+      {loading ? <PageSkeleton kind="admin-flashcards" header={false} /> : (
         <div className="grid gap-6 xl:grid-cols-2">
           <section className="space-y-4 rounded-2xl border border-white/10 bg-surface p-5">
             <h2 className="font-display text-lg font-bold">Onderwerpen</h2>

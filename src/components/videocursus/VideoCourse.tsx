@@ -12,6 +12,7 @@ import AdaptiveBanner from "./AdaptiveBanner";
 import CourseSidebar from "./CourseSidebar";
 import LessonPlayer from "./LessonPlayer";
 import Notification from "../ui/Notification";
+import PageSkeleton from "../ui/PageSkeleton";
 
 type State =
   | { status: "loading" }
@@ -118,7 +119,7 @@ export default function VideoCourse() {
   };
 
   if (state.status === "loading") {
-    return <p className="text-paper/60">Videocursus laden...</p>;
+    return <PageSkeleton kind="video" header={false} />;
   }
   if (state.status === "error") {
     return (
