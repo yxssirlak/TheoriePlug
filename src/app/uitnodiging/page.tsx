@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Notification from "../../components/ui/Notification";
 import { validInvitationPassword } from "../../lib/admin-users";
@@ -68,17 +69,50 @@ export default function InvitationPage() {
     }
   }
 
-  return <main className="mx-auto max-w-md px-4 py-16 text-paper">
-    {error && <Notification onDismiss={() => setError(null)}>{error}</Notification>}
-    <h1 className="font-display text-2xl font-bold text-lime">Account activeren</h1>
-    {state === "checking" && <p className="mt-4">Uitnodiging controleren...</p>}
-    {state === "invalid" && <p className="mt-4 text-paper/70">De uitnodiging kon niet worden gecontroleerd. Neem contact op met de beheerder.</p>}
-    {state === "done" && <p className="mt-4">Je wachtwoord is ingesteld en je bent ingelogd. <Link className="text-lime underline" href="/dashboard">Naar het platform</Link></p>}
-    {state === "ready" && <form onSubmit={submit} className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-surface p-6">
-      <p className="text-sm text-paper/70">Kies een wachtwoord met minimaal 8 tekens, één letter en één cijfer.</p>
-      <label className="block text-sm">Nieuw wachtwoord<input type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-surface-raised p-3" /></label>
-      <label className="block text-sm">Herhaal wachtwoord<input type="password" autoComplete="new-password" required minLength={8} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-surface-raised p-3" /></label>
-      <button disabled={busy} className="rounded-full bg-lime px-5 py-2 font-bold text-ink disabled:opacity-50">{busy ? "Opslaan..." : "Wachtwoord instellen"}</button>
-    </form>}
-  </main>;
+  const inputClass = "w-full rounded-xl border border-white/10 bg-surface-raised px-4 py-3 text-base text-paper placeholder:text-paper/30 outline-none transition-all hover:border-white/20 focus:border-lime focus:ring-2 focus:ring-lime/30";
+  const buttonClass = "flex w-full items-center justify-center rounded-full bg-lime px-6 py-3.5 text-lg font-bold text-ink transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100";
+
+  return (
+    <main className="auth-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12 text-paper">
+      {error && <Notification onDismiss={() => setError(null)}>{error}</Notification>}
+      <div className="relative w-full max-w-md">
+        <div className="mb-8 flex justify-center">
+          <Image src="/brand/png/svg/logo.svg" alt="TheoriePlug" width={582} height={61} priority className="h-9 w-auto max-w-full" />
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-surface p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:p-8">
+          <span className="inline-block rounded-full bg-lime px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-ink">
+            Uitnodiging
+          </span>
+          <h1 className="mt-4 font-display text-2xl font-extrabold sm:text-3xl">
+            Account <span className="text-lime">activeren</span>
+          </h1>
+          {state === "checking" && <p className="mt-3 text-paper/60" role="status">Uitnodiging controleren...</p>}
+          {state === "invalid" && <p className="mt-3 text-paper/60">De uitnodiging kon niet worden gecontroleerd. Neem contact op met de beheerder.</p>}
+          {state === "done" && (
+            <div className="mt-3">
+              <p className="text-paper/60">Je wachtwoord is ingesteld en je bent ingelogd. Je kunt nu aan de slag!</p>
+              <Link className={`${buttonClass} mt-6`} href="/dashboard">Naar het platform</Link>
+            </div>
+          )}
+          {state === "ready" && (
+            <>
+              <p className="mt-2 text-paper/60">Kies een wachtwoord om toegang te krijgen tot jouw leeromgeving.</p>
+              <form onSubmit={submit} className="mt-6 space-y-5">
+                <div>
+                  <label htmlFor="password" className="mb-2 block text-sm font-semibold text-paper/80">Nieuw wachtwoord</label>
+                  <input id="password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Kies een wachtwoord" className={inputClass} aria-describedby="password-hint" />
+                  <p id="password-hint" className="mt-2 text-sm text-paper/50">Minimaal 8 tekens, één letter en één cijfer.</p>
+                </div>
+                <div>
+                  <label htmlFor="confirmation" className="mb-2 block text-sm font-semibold text-paper/80">Herhaal wachtwoord</label>
+                  <input id="confirmation" type="password" autoComplete="new-password" required minLength={8} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} placeholder="Herhaal je wachtwoord" className={inputClass} />
+                </div>
+                <button disabled={busy} className={buttonClass}>{busy ? "Opslaan..." : "Wachtwoord instellen"}</button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </main>
+  );
 }
