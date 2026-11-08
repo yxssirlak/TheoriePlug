@@ -18,7 +18,7 @@ export const CHECKOUT_PACKAGES: CheckoutPackage[] = [
     priceCents: 2999,
     durationDays: 7,
     durationLabel: "7 dagen",
-    features: ["Videocursus", "3 oefenexamens", "ADAS", "Cheat Sheet"],
+    features: ["Videocursus", "3 oefenexamens", "Cheat Sheet"],
   },
   {
     slug: "max",
@@ -28,7 +28,7 @@ export const CHECKOUT_PACKAGES: CheckoutPackage[] = [
     durationDays: 30,
     durationLabel: "1 maand",
     featured: true,
-    features: ["Videocursus", "10 oefenexamens", "ADAS", "Cheat Sheet", "Adaptive", "Flashcards", "1x pauzeren"],
+    features: ["Videocursus", "10 oefenexamens", "Cheat Sheet", "Adaptive", "Flashcards", "1x pauzeren"],
   },
   {
     slug: "boost",
@@ -37,7 +37,7 @@ export const CHECKOUT_PACKAGES: CheckoutPackage[] = [
     priceCents: 3999,
     durationDays: 14,
     durationLabel: "14 dagen",
-    features: ["Videocursus", "8 oefenexamens", "ADAS", "Cheat Sheet", "Adaptive", "1x pauzeren"],
+    features: ["Videocursus", "8 oefenexamens", "Cheat Sheet", "Adaptive", "1x pauzeren"],
   },
 ];
 

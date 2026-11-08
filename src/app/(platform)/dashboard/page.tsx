@@ -13,7 +13,6 @@ const QUICK_ACTIONS = [
   { href: "/oefenexamens", sticker: "oefenexamens", title: "Oefenexamen starten", text: "Doe een examen zoals bij het CBR.", accent: true },
   { href: "/videocursus", sticker: "videocursus", title: "Videocursus", text: "Leer de stof stap voor stap." },
   { href: "/flashcards", sticker: "flashcards", title: "Flashcards", text: "Snel herhalen, ook onderweg." },
-  { href: "/adas", sticker: "adas", title: "ADAS", text: "Alles over rijhulpsystemen." },
   { href: "/cheat-sheet", sticker: "cheatsheet", title: "Cheat sheet", text: "Alle regels op één blad." },
   { href: "/voortgang", sticker: "voortgang", title: "Mijn voortgang", text: "Zie waar je nog punten laat liggen." },
 ];

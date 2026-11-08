@@ -36,7 +36,7 @@ export function SkeletonContent({ kind }: { kind: SkeletonKind }) {
     case "flashcards":
       return <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"><div className="space-y-5"><Panel><Lines /></Panel><Skeleton className="h-[28rem] w-full rounded-3xl" /></div><Panel><SkeletonList rows={5} /></Panel></div>;
     case "exam":
-      return <Panel className="max-w-xl"><Lines /><Skeleton className="h-12 w-44 rounded-full" /></Panel>;
+      return <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2].map((i) => <Panel key={i}><Lines /><Skeleton className="h-12 w-40 rounded-full" /></Panel>)}</div>;
     case "cards":
       return <div className="grid gap-5 md:grid-cols-2">{[0, 1, 2, 3].map((i) => <Panel key={i}><Skeleton className="aspect-video w-full" /><Lines /></Panel>)}</div>;
     case "sheet":
@@ -75,9 +75,9 @@ export default function PageSkeleton({ kind, header = true }: { kind: SkeletonKi
 export function skeletonForPath(path: string): SkeletonKind {
   const kinds: Record<string, SkeletonKind> = {
     "/dashboard": "dashboard", "/videocursus": "video", "/flashcards": "flashcards",
-    "/oefenexamens": "exam", "/adas": "cards", "/cheat-sheet": "sheet",
+    "/oefenexamens": "exam", "/cheat-sheet": "sheet",
     "/instellingen": "settings", "/voortgang": "coming-soon",
-    "/admin": "admin-dashboard", "/admin/cursus": "admin-editor", "/admin/adas": "admin-editor",
+    "/admin": "admin-dashboard", "/admin/cursus": "admin-editor",
     "/admin/oefenexamens": "admin-editor", "/admin/cheat-sheet": "admin-editor",
     "/admin/flashcards": "admin-flashcards", "/admin/gebruikers": "users",
     "/admin/km-declaratie": "kilometers",

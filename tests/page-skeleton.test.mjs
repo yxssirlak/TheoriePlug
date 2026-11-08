@@ -17,9 +17,9 @@ const { default: PageSkeleton, skeletonForPath } = module.exports;
 
 const portalRoutes = {
   "/dashboard": "dashboard", "/videocursus": "video", "/flashcards": "flashcards",
-  "/oefenexamens": "exam", "/adas": "cards", "/cheat-sheet": "sheet",
+  "/oefenexamens": "exam", "/cheat-sheet": "sheet",
   "/instellingen": "settings", "/voortgang": "coming-soon",
-  "/admin": "admin-dashboard", "/admin/cursus": "admin-editor", "/admin/adas": "admin-editor",
+  "/admin": "admin-dashboard", "/admin/cursus": "admin-editor",
   "/admin/oefenexamens": "admin-editor", "/admin/cheat-sheet": "admin-editor",
   "/admin/flashcards": "admin-flashcards", "/admin/gebruikers": "users", "/admin/km-declaratie": "kilometers",
 };

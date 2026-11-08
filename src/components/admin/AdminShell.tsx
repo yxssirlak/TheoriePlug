@@ -14,7 +14,6 @@ export const ADMIN_NAV = [
   { href: "/admin/oefenexamens", label: "Oefenexamens", sticker: "/brand/png/svg/sticker-oefenexamens.svg" },
   { href: "/admin/flashcards", label: "Flashcards", sticker: "/brand/png/svg/sticker-flashcards.svg" },
   { href: "/admin/cheat-sheet", label: "Cheat sheet", sticker: "/brand/png/svg/sticker-cheatsheet.svg" },
-  { href: "/admin/adas", label: "ADAS", sticker: "/brand/png/svg/sticker-adas.svg" },
   { href: "/admin/gebruikers", label: "Gebruikers", sticker: "/brand/png/svg/sticker-gebruikers.svg" },
   { href: "/admin/km-declaratie", label: "Km declaratie", sticker: "/brand/png/svg/sticker-car.svg" },
 ];

@@ -1,6 +1,6 @@
-import ExamView from "../../../components/dashboard/ExamView";
+import ExamSimulator from "../../../components/dashboard/ExamSimulator";
 import AuthenticatedPage from "../../../components/dashboard/AuthenticatedPage";
 
 export default function Page() {
-  return <AuthenticatedPage><ExamView /></AuthenticatedPage>;
+  return <AuthenticatedPage><ExamSimulator /></AuthenticatedPage>;
 }

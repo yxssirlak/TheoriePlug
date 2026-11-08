@@ -10,10 +10,9 @@ const CARDS = [
   { table: "topics", label: "Hoofdonderwerpen", href: "/admin/cursus" },
   { table: "lessons", label: "Videolessen", href: "/admin/cursus" },
   { table: "lesson_questions", label: "Kennis-check vragen", href: "/admin/cursus" },
-  { table: "exam_questions", label: "Examenvragen", href: "/admin/oefenexamens" },
+  { table: "exams", label: "Oefenexamens", href: "/admin/oefenexamens" },
   { table: "flashcards", label: "Flashcards", href: "/admin/flashcards" },
   { table: "cheat_sheet_pages", label: "Cheat sheet-pagina's", href: "/admin/cheat-sheet" },
-  { table: "adas_items", label: "ADAS-onderdelen", href: "/admin/adas" },
   { table: "profiles", label: "Gebruikers", href: "/admin/gebruikers" },
   { table: "business_trips", label: "Km declaratie", href: "/admin/km-declaratie" },
 ];
