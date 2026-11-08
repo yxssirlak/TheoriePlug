@@ -17,6 +17,8 @@ const emptyCategory = (): CategoryDraft => ({ name: "", slug: "", sort_order: 0,
 const emptyCard = (categoryId = ""): CardDraft => ({ category_id: categoryId, front: "", back: "", image_url: null, explanation: "", sort_order: 0, is_published: false });
 const input = "mt-1 w-full rounded-xl border border-white/10 bg-surface-raised px-3 py-2 text-paper outline-none focus:border-lime";
 const button = "rounded-xl bg-lime px-4 py-2 text-sm font-bold text-ink disabled:opacity-50";
+type PublicationFilter = "all" | "published" | "draft";
+type CardSort = "order-asc" | "order-desc" | "question-asc" | "question-desc";
 
 async function fetchData(supabase: ReturnType<typeof createClient>) {
   const [categories, cards, lessons] = await Promise.all([
@@ -35,6 +37,9 @@ export default function FlashcardsManager() {
   const [category, setCategory] = useState<CategoryDraft>(emptyCategory);
   const [card, setCard] = useState<CardDraft>(() => emptyCard());
   const [filter, setFilter] = useState("");
+  const [query, setQuery] = useState("");
+  const [publicationFilter, setPublicationFilter] = useState<PublicationFilter>("all");
+  const [cardSort, setCardSort] = useState<CardSort>("order-asc");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,8 +166,25 @@ export default function FlashcardsManager() {
     }
   }
 
-  const visibleCards = cards.filter((item) => !filter || item.category_id === filter);
+  const normalizedQuery = query.trim().toLocaleLowerCase("nl");
+  const visibleCards = cards
+    .filter((item) => !filter || item.category_id === filter)
+    .filter((item) => publicationFilter === "all" || item.is_published === (publicationFilter === "published"))
+    .filter((item) => !normalizedQuery || `${item.front} ${item.back}`.toLocaleLowerCase("nl").includes(normalizedQuery))
+    .sort((a, b) => {
+      switch (cardSort) {
+        case "order-desc":
+          return b.sort_order - a.sort_order || a.front.localeCompare(b.front, "nl");
+        case "question-asc":
+          return a.front.localeCompare(b.front, "nl", { sensitivity: "base", numeric: true });
+        case "question-desc":
+          return b.front.localeCompare(a.front, "nl", { sensitivity: "base", numeric: true });
+        default:
+          return a.sort_order - b.sort_order || a.front.localeCompare(b.front, "nl");
+      }
+    });
   const allVisibleSelected = visibleCards.length > 0 && visibleCards.every((item) => selectedIds.has(item.id));
+  const hasActiveFilters = Boolean(filter || normalizedQuery || publicationFilter !== "all" || cardSort !== "order-asc");
 
   return (
     <div className="space-y-6">
@@ -216,10 +238,39 @@ export default function FlashcardsManager() {
             </form>
           </section>
           <section className="rounded-2xl border border-white/10 bg-surface p-5 xl:col-span-2">
-            <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-display text-lg font-bold">Overzicht kaarten</h2><div className="w-full max-w-xs"><GlassSelect label="Filter op onderwerp" disabled={busy} value={filter} onChange={setFilter} options={[{ value: "", label: "Alle onderwerpen" }, ...categories.map((item) => ({ value: item.id, label: item.name }))]} /></div></div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-display text-lg font-bold">Overzicht kaarten</h2>
+              <span className="text-sm text-paper/60" aria-live="polite">{visibleCards.length} van {cards.length} kaarten</span>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div>
+                <GlassSelect label="Filter op onderwerp" disabled={busy} value={filter} onChange={setFilter} options={[{ value: "", label: "Alle onderwerpen" }, ...categories.map((item) => ({ value: item.id, label: item.name }))]} />
+              </div>
+              <div>
+                <GlassSelect label="Filter op status" disabled={busy} value={publicationFilter} onChange={setPublicationFilter} options={[
+                  { value: "all", label: "Alle statussen" },
+                  { value: "published", label: "Gepubliceerd" },
+                  { value: "draft", label: "Concept" },
+                ]} />
+              </div>
+              <div>
+                <GlassSelect label="Sorteren op" disabled={busy} value={cardSort} onChange={setCardSort} options={[
+                  { value: "order-asc", label: "Volgorde: laag naar hoog" },
+                  { value: "order-desc", label: "Volgorde: hoog naar laag" },
+                  { value: "question-asc", label: "Vraag: A naar Z" },
+                  { value: "question-desc", label: "Vraag: Z naar A" },
+                ]} />
+              </div>
+              <label htmlFor="flashcard-search" className="sr-only">Zoeken op vraag of antwoord</label>
+              <div>
+                <input id="flashcard-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={busy} placeholder="Zoek op vraag of antwoord..." className={`${input} placeholder:text-paper/40`} />
+              </div>
+            </div>
+            {hasActiveFilters && <button type="button" disabled={busy} onClick={() => { setFilter(""); setQuery(""); setPublicationFilter("all"); setCardSort("order-asc"); }} className="mt-3 text-sm font-semibold text-lime hover:underline disabled:opacity-50">Filters wissen</button>}
             <div className="mt-4 flex items-center gap-3"><button type="button" disabled={busy || selectedIds.size === 0} onClick={() => void removeSelected()} className="rounded-full border border-red-500/40 px-4 py-2 text-sm font-bold text-red-300 hover:bg-red-500/10 disabled:opacity-40">Verwijder geselecteerd ({selectedIds.size})</button><span className="text-xs text-paper/50">Selectie blijft behouden bij filteren.</span></div>
             <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-paper/50"><tr><th className="p-2"><input type="checkbox" aria-label="Selecteer alle zichtbare kaarten" disabled={busy || visibleCards.length === 0} checked={allVisibleSelected} onChange={(event) => { const checked = event.target.checked; setSelectedIds((old) => updateCardSelection(old, visibleCards.map((item) => item.id), checked)); }} /></th><th className="p-2">Onderwerp</th><th className="p-2">Vraag</th><th className="p-2">Volgorde</th><th className="p-2">Status</th><th className="p-2">Acties</th></tr></thead><tbody>
               {visibleCards.map((item) => <tr key={item.id} className="border-t border-white/5 transition-colors hover:bg-white/[0.02]"><td className="p-2"><input type="checkbox" aria-label={`Selecteer ${item.front}`} disabled={busy} checked={selectedIds.has(item.id)} onChange={(event) => { const checked = event.target.checked; setSelectedIds((old) => updateCardSelection(old, [item.id], checked)); }} /></td><td className="p-2">{categories.find((c) => c.id === item.category_id)?.name}</td><td className="p-2">{item.front}</td><td className="p-2">{item.sort_order}</td><td className="p-2">{item.is_published ? "Gepubliceerd" : "Concept"}</td><td className="space-x-3 whitespace-nowrap p-2"><button type="button" disabled={busy} className="text-lime" onClick={() => { setCard(item); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Bewerken</button><button type="button" disabled={busy} className="text-red-300" onClick={() => void removeCard(item)}>Verwijderen</button></td></tr>)}
+              {visibleCards.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-paper/60">{cards.length === 0 ? "Er zijn nog geen kaarten." : "Geen kaarten gevonden. Pas je filters aan."}</td></tr>}
             </tbody></table></div>
           </section>
         </div>

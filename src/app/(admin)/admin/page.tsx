@@ -12,7 +12,7 @@ const CARDS = [
   { table: "lesson_questions", label: "Kennis-check vragen", href: "/admin/cursus" },
   { table: "exam_questions", label: "Examenvragen", href: "/admin/oefenexamens" },
   { table: "flashcards", label: "Flashcards", href: "/admin/flashcards" },
-  { table: "cheat_sheet_items", label: "Cheat sheet-onderdelen", href: "/admin/cheat-sheet" },
+  { table: "cheat_sheet_pages", label: "Cheat sheet-pagina's", href: "/admin/cheat-sheet" },
   { table: "adas_items", label: "ADAS-onderdelen", href: "/admin/adas" },
   { table: "profiles", label: "Gebruikers", href: "/admin/gebruikers" },
   { table: "business_trips", label: "Km declaratie", href: "/admin/km-declaratie" },
@@ -45,7 +45,7 @@ export default function Page() {
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {CARDS.map((card) => (
           <Link key={card.table} href={card.href} className="rounded-2xl border border-white/10 bg-surface p-5 transition-colors hover:border-lime">
-            <p className="font-display text-3xl font-extrabold text-lime">{card.table in counts ? counts[card.table] ?? "–" : <span role="status" aria-label={`${card.label} laden`}><Skeleton className="h-9 w-14" /></span>}</p>
+            <div className="font-display text-3xl font-extrabold text-lime">{card.table in counts ? counts[card.table] ?? "–" : <span role="status" aria-label={`${card.label} laden`}><Skeleton className="h-9 w-14" /></span>}</div>
             <p className="mt-1 text-sm text-paper/70">{card.label}</p>
           </Link>
         ))}

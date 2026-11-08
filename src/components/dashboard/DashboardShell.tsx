@@ -12,6 +12,7 @@ import { PlatformUser, UserProvider } from "./user-context";
 import WelcomeModal from "./WelcomeModal"; 
 import PageSkeleton, { Skeleton, SkeletonList, skeletonForPath } from "../ui/PageSkeleton";
 import LinkPending from "../ui/LinkPending";
+import { useSidebarPreference } from "../ui/useSidebarPreference";
 
 function NavIcon({ item, className, hoverScale = false }: { item: NavItem; className: string; hoverScale?: boolean }) {
   if (!item.sticker) return <span className="flex h-8 w-8 items-center justify-center text-jade">{item.icon}</span>;
@@ -40,7 +41,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const [tier, setTier] = useState<PackageTier | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, toggleCollapsed] = useSidebarPreference();
   const [hovered, setHovered] = useState(false);
   const expanded = !collapsed || hovered;
 
@@ -168,9 +169,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               {/* Pin / Punaise knop */}
               <button
                 type="button"
-                onClick={() => setCollapsed((prev) => !prev)}
+                onClick={toggleCollapsed}
                 title={collapsed ? "Zijbalk vastpinnen" : "Zijbalk losmaken"}
-                aria-label="Zijbalk vastpinnen"
+                aria-label={collapsed ? "Zijbalk vastpinnen" : "Zijbalk losmaken"}
+                aria-pressed={!collapsed}
                 className={`absolute -right-3 -top-3 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent text-paper/40 transition-all duration-500 hover:bg-white/5 hover:text-white ${
                   expanded ? "scale-100 opacity-100" : "pointer-events-none scale-50 opacity-0"
                 }`}
@@ -193,7 +195,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
             </div>
 
             {/* Navigatie */}
-            <nav aria-label="Leeromgeving" className="relative mt-4 flex-1 space-y-2 overflow-y-auto overflow-x-hidden">
+            <nav aria-label="Leeromgeving" className="relative -mx-4 mt-1 flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-4 py-3">
               {NAV_ITEMS.map((item) => {
                 const active = isActive(item.href);
                 return (
@@ -203,16 +205,12 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                     title={expanded ? undefined : item.label}
                     aria-label={item.label}
                     aria-current={active ? "page" : undefined}
-                    onClick={() => {
-                      setCollapsed(true);
-                      setHovered(false);
-                    }}
-                    className={`group relative flex h-12 items-center whitespace-nowrap rounded-xl font-semibold transition-all duration-300 ${
+                    className={`group relative flex h-12 items-center whitespace-nowrap rounded-xl border font-semibold transition-all duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime motion-reduce:transition-none ${
                       expanded ? "w-full" : "mx-auto w-12"
                     } ${
                       active
-                        ? "border border-lime/50 bg-lime/10 text-lime shadow-[0_0_20px_rgba(204,255,0,0.1)]"
-                        : "text-paper/70 hover:bg-white/5 hover:text-paper"
+                        ? "border-lime/50 bg-lime/10 text-lime shadow-[0_0_20px_rgba(204,255,0,0.1)]"
+                        : "border-transparent text-paper/70 hover:bg-white/5 hover:text-paper"
                     }`}
                   >
                     {/* Icoon altijd verticaal in het midden (top-1/2 -translate-y-1/2), alleen horizontaal animeren */}
