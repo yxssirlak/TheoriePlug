@@ -8,9 +8,29 @@ import Notification from "../../components/ui/Notification";
 import { validInvitationPassword } from "../../lib/admin-users";
 import { activateInvitation, clearInvitation } from "../../lib/invitation-session";
 
+function PasswordVisibilityButton({ visible, onToggle, field }: { visible: boolean; onToggle: () => void; field: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={`${visible ? "Verberg" : "Toon"} ${field}`}
+      aria-pressed={visible}
+      className="absolute inset-y-0 right-1 flex w-12 items-center justify-center rounded-lg text-paper/60 transition-colors hover:text-lime focus-visible:outline-2 focus-visible:outline-lime"
+    >
+      <svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+        <circle cx="12" cy="12" r="3" />
+        {visible && <path d="M4 4l16 16" />}
+      </svg>
+    </button>
+  );
+}
+
 export default function InvitationPage() {
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [busy, setBusy] = useState(false);
   const [state, setState] = useState<"checking" | "ready" | "invalid" | "done">("checking");
   const [error, setError] = useState<string | null>(null);
@@ -100,12 +120,18 @@ export default function InvitationPage() {
               <form onSubmit={submit} className="mt-6 space-y-5">
                 <div>
                   <label htmlFor="password" className="mb-2 block text-sm font-semibold text-paper/80">Nieuw wachtwoord</label>
-                  <input id="password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Kies een wachtwoord" className={inputClass} aria-describedby="password-hint" />
+                  <div className="relative">
+                    <input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Kies een wachtwoord" className={`${inputClass} pr-14`} aria-describedby="password-hint" />
+                    <PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword((value) => !value)} field="nieuw wachtwoord" />
+                  </div>
                   <p id="password-hint" className="mt-2 text-sm text-paper/50">Minimaal 8 tekens, één letter en één cijfer.</p>
                 </div>
                 <div>
                   <label htmlFor="confirmation" className="mb-2 block text-sm font-semibold text-paper/80">Herhaal wachtwoord</label>
-                  <input id="confirmation" type="password" autoComplete="new-password" required minLength={8} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} placeholder="Herhaal je wachtwoord" className={inputClass} />
+                  <div className="relative">
+                    <input id="confirmation" type={showConfirmation ? "text" : "password"} autoComplete="new-password" required minLength={8} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} placeholder="Herhaal je wachtwoord" className={`${inputClass} pr-14`} />
+                    <PasswordVisibilityButton visible={showConfirmation} onToggle={() => setShowConfirmation((value) => !value)} field="herhaald wachtwoord" />
+                  </div>
                 </div>
                 <button disabled={busy} className={buttonClass}>{busy ? "Opslaan..." : "Wachtwoord instellen"}</button>
               </form>
