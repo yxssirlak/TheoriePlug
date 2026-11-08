@@ -26,7 +26,9 @@ function SettingsContent() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const meta = user.user_metadata;
-        setName(meta?.first_name || meta?.full_name || meta?.name || "");
+        const { data: profile, error: profileError } = await supabase.from("profiles").select("first_name").eq("id", user.id).maybeSingle();
+        if (profileError) console.error("Profiel laden mislukt:", profileError.message);
+        setName(profile?.first_name || meta?.first_name || meta?.full_name || meta?.name || "");
         setExamDate(meta?.exam_date || "");
       }
       setInitialLoad(false);

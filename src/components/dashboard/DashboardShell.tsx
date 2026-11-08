@@ -49,14 +49,17 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     const supabase = createClient();
     let cancelled = false;
 
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (cancelled) return;
       if (!data.user) {
         router.replace("/login");
         return;
       }
       const email = data.user.email ?? "";
-      setUser({ id: data.user.id, email, name: displayName(data.user.user_metadata, email) });
+      const { data: profile, error: profileError } = await supabase.from("profiles").select("first_name").eq("id", data.user.id).maybeSingle();
+      if (profileError) console.error("Profiel laden mislukt:", profileError.message);
+      if (cancelled) return;
+      setUser({ id: data.user.id, email, name: profile?.first_name?.trim().split(" ")[0] || displayName(data.user.user_metadata, email) });
       loadPackageTier(supabase, data.user.id)
         .then((found) => !cancelled && setTier(found))
         .catch(() => undefined);

@@ -46,6 +46,8 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith('/coming-soon') ||
       pathname.startsWith('/beheer') ||
       pathname.startsWith('/admin') ||
+      pathname.startsWith('/uitnodiging') ||
+      pathname.startsWith('/api/admin/gebruikers') ||
       pathname.startsWith('/api/webhooks')
 
     if (!isOpenPath) {

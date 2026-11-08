@@ -443,7 +443,7 @@ function KilometerDeclaratieContent() {
 
       <div className="rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4 text-sm text-paper/80">
         <p>De routeafstand is een schatting, geen bewijs van werkelijk gereden kilometers. Een retour verdubbelt de heenroute; een afwijkende terugroute wordt niet apart berekend.</p>
-        <p className="mt-2">Het vaste tarief is € 0,23 per km (2026, eigen auto). Controleer bij andere jaren en omstandigheden het toepasselijke tarief. Voor een volledige fiscale rittenregistratie zijn aanvullende gegevens nodig, zoals auto, begin- en eindkilometerstand en eventuele afwijkende route. Bewaar die apart.</p>
+        <p className="mt-2">Het vaste tarief is € 0,25 per km (2026, eigen auto). Controleer bij andere jaren en omstandigheden het toepasselijke tarief. Voor een volledige fiscale rittenregistratie zijn aanvullende gegevens nodig, zoals auto, begin- en eindkilometerstand en eventuele afwijkende route. Bewaar die apart.</p>
         <p className="mt-2">Adressen worden voor de berekening naar openrouteservice verstuurd. Controleer de gevonden locaties voordat je opslaat.</p>
       </div>
 

@@ -1,4 +1,4 @@
-export const RATE_CENTS_PER_KM = 23;
+export const RATE_CENTS_PER_KM = 25;
 
 export type Driver = "Yassir" | "Danté";
 
