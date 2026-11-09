@@ -12,6 +12,10 @@ const questionTypeLabel = {
   multiple_choice: "Meerkeuze",
   number: "Getalvraag",
   ordering: "Voorrangssituatie",
+  yes_no: "Ja / nee",
+  multiple_response: "Meerdere antwoorden",
+  single_drag: "Single-sleepvraag",
+  hotspot: "Hotspotvraag",
 } as const;
 
 function ImageUpload({ label, busy, onUpload }: {
@@ -78,13 +82,13 @@ export default function QuestionEditor({ question, index, total, busy, onChange,
     } else {
       onChange({
         ...question,
-        options: options.map((option, order) => removed?.is_correct && order === 0 ? { ...option, is_correct: true } : option),
+        options: options.map((option, order) => removed?.is_correct && !options.some((item) => item.is_correct) && order === 0 ? { ...option, is_correct: true } : option),
       });
     }
   }
 
   function updateChoice(selectedId: string) {
-    onChange({ ...question, options: question.options.map((option) => ({ ...option, is_correct: option.id === selectedId })) });
+    onChange({ ...question, options: question.options.map((option) => ({ ...option, is_correct: question.question_type === "multiple_response" ? (option.id === selectedId ? !option.is_correct : option.is_correct) : option.id === selectedId })) });
   }
 
   return (
@@ -135,7 +139,7 @@ export default function QuestionEditor({ question, index, total, busy, onChange,
               {question.image_url && <button type="button" onClick={() => onChange({ ...question, image_url: null })} className={smallButton}>Verwijderen</button>}
             </div>
           </div>
-          {question.question_type === "ordering" ? (
+          {["ordering", "single_drag", "hotspot"].includes(question.question_type) ? (
             <VisualDropzoneEditor question={question} onChange={onChange} />
           ) : question.image_url ? (
             <div className="max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-black/10">
@@ -155,27 +159,27 @@ export default function QuestionEditor({ question, index, total, busy, onChange,
           </div>
         )}
 
-        {question.question_type === "multiple_choice" && (
+        {["multiple_choice", "yes_no", "multiple_response"].includes(question.question_type) && (
           <section aria-labelledby={`choices-title-${question.id}`} className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 id={`choices-title-${question.id}`} className="text-xs font-bold uppercase tracking-[0.13em] text-white/55">Antwoordopties</h3>
-                <p className="mt-1 text-[11px] text-white/35">Selecteer het juiste antwoord.</p>
+                <p className="mt-1 text-[11px] text-white/35">{question.question_type === "multiple_response" ? "Selecteer alle juiste antwoorden." : "Selecteer het juiste antwoord."}</p>
               </div>
-              {question.options.length < 4 && <button type="button" className={smallButton} onClick={addOption}>+ Optie toevoegen</button>}
+              {question.question_type !== "yes_no" && question.options.length < 4 && <button type="button" className={smallButton} onClick={addOption}>+ Optie toevoegen</button>}
             </div>
-            <div role="radiogroup" aria-label="Correct antwoord" className="space-y-2.5">
+            <div role={question.question_type === "multiple_response" ? "group" : "radiogroup"} aria-label="Correct antwoord" className="space-y-2.5">
               {question.options.map((option, optionIndex) => (
                 <div key={option.id} className={`rounded-2xl border p-3 transition-colors ${option.is_correct ? "border-[#CCFF00]/25 bg-[#CCFF00]/[0.035]" : "border-white/[0.07] bg-white/[0.02]"}`}>
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      role="radio"
+                      role={question.question_type === "multiple_response" ? "checkbox" : "radio"}
                       aria-checked={option.is_correct}
                       aria-label={`Antwoord ${String.fromCharCode(65 + optionIndex)}${option.is_correct ? ", correct" : ", markeer als correct"}`}
-                      tabIndex={option.is_correct ? 0 : -1}
+                      tabIndex={question.question_type === "multiple_response" || option.is_correct ? 0 : -1}
                       onKeyDown={(event) => {
-                        if (event.key === "ArrowDown" || event.key === "ArrowRight" || event.key === "ArrowUp" || event.key === "ArrowLeft") {
+                        if (question.question_type !== "multiple_response" && (event.key === "ArrowDown" || event.key === "ArrowRight" || event.key === "ArrowUp" || event.key === "ArrowLeft")) {
                           event.preventDefault();
                           const direction = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1;
                           const nextIndex = (optionIndex + direction + question.options.length) % question.options.length;
@@ -190,7 +194,7 @@ export default function QuestionEditor({ question, index, total, busy, onChange,
                     >
                       {String.fromCharCode(65 + optionIndex)}
                     </button>
-                    <input aria-label={`Antwoord ${String.fromCharCode(65 + optionIndex)}`} value={option.option_text}
+                    <input aria-label={`Antwoord ${String.fromCharCode(65 + optionIndex)}`} value={option.option_text} readOnly={question.question_type === "yes_no"}
                       onChange={(event) => replaceOption(option.id, { option_text: event.target.value })}
                       className="min-w-0 flex-1 bg-transparent py-2 text-sm text-white outline-none placeholder:text-white/25 focus-visible:ring-1 focus-visible:ring-[#CCFF00]"
                       placeholder="Typ een antwoord…" />

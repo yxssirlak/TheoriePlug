@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { ExamQuestion } from "../../../lib/exam-simulator";
 import ExamImage from "../../ui/ExamImage";
+import OrderingQuestion from "../../dashboard/OrderingQuestion";
+import ZoneQuestion from "../../dashboard/ZoneQuestion";
 
 const button = "min-h-11 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-left text-sm text-white/80 transition hover:border-white/25 focus-visible:outline-2 focus-visible:outline-[#CCFF00]";
 
@@ -14,6 +16,7 @@ export default function QuestionPreview({ question, index, total, onBack }: {
 }) {
   const [marked, setMarked] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [selectedMultiple, setSelectedMultiple] = useState<string[]>([]);
   const [number, setNumber] = useState<number | null>(null);
   const [assigned, setAssigned] = useState<Record<string, number>>({});
   return (
@@ -42,27 +45,19 @@ export default function QuestionPreview({ question, index, total, onBack }: {
 
         <div className="space-y-5 rounded-2xl border border-white/[0.07] bg-[#101013] p-4 sm:p-6">
           <h3 className="text-lg font-bold leading-relaxed text-white">{question.question_text || "De vraagtekst verschijnt hier."}</h3>
-          {question.image_url && (
+          {question.image_url && !["ordering", "single_drag", "hotspot"].includes(question.question_type) && (
             <div className="relative max-w-3xl overflow-hidden rounded-xl border border-white/10">
               <ExamImage path={question.image_url} alt="Media bij de vraag" className="block h-auto w-full" />
-              {question.question_type === "ordering" && question.options.map((option) => (
-                <button key={option.id} type="button" onClick={() => number !== null && setAssigned((current) => ({ ...current, [option.id]: number }))}
-                  aria-label={`${option.option_text || "Positie"} ${assigned[option.id] ? `, nummer ${assigned[option.id]}` : ""}. Klik om het geselecteerde nummer te plaatsen.`}
-                  style={{ left: `${option.coordinates_x ?? 50}%`, top: `${option.coordinates_y ?? 50}%` }}
-                  className="absolute flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#CCFF00] bg-[#101013]/85 font-bold text-[#CCFF00] outline-none focus-visible:ring-4 focus-visible:ring-[#CCFF00]/35">
-                  {assigned[option.id] ?? "?"}
-                </button>
-              ))}
             </div>
           )}
 
-          {question.question_type === "multiple_choice" && (
-            <div role="radiogroup" aria-label="Antwoordopties" className="grid gap-2.5">
+          {["multiple_choice", "yes_no", "multiple_response"].includes(question.question_type) && (
+            <div role={question.question_type === "multiple_response" ? "group" : "radiogroup"} aria-label="Antwoordopties" className="grid gap-2.5">
               {question.options.map((option, optionIndex) => (
-                <button key={option.id} type="button" role="radio" aria-checked={selected === option.id}
-                  onClick={() => setSelected(option.id)}
-                  className={`${button} flex items-center gap-3 ${selected === option.id ? "border-[#CCFF00]/40 bg-[#CCFF00]/[0.07]" : ""}`}>
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${selected === option.id ? "border-[#CCFF00] bg-[#CCFF00] text-[#10140a]" : "border-white/15 text-white/55"}`}>{String.fromCharCode(65 + optionIndex)}</span>
+                <button key={option.id} type="button" role={question.question_type === "multiple_response" ? "checkbox" : "radio"} aria-checked={question.question_type === "multiple_response" ? selectedMultiple.includes(option.id) : selected === option.id}
+                  onClick={() => question.question_type === "multiple_response" ? setSelectedMultiple((current) => current.includes(option.id) ? current.filter((id) => id !== option.id) : [...current, option.id]) : setSelected(option.id)}
+                  className={`${button} flex items-center gap-3 ${(question.question_type === "multiple_response" ? selectedMultiple.includes(option.id) : selected === option.id) ? "border-[#CCFF00]/40 bg-[#CCFF00]/[0.07]" : ""}`}>
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${(question.question_type === "multiple_response" ? selectedMultiple.includes(option.id) : selected === option.id) ? "border-[#CCFF00] bg-[#CCFF00] text-[#10140a]" : "border-white/15 text-white/55"}`}>{String.fromCharCode(65 + optionIndex)}</span>
                   <span className="min-w-0 flex-1">{option.option_text || `Antwoord ${optionIndex + 1}`}</span>
                   {option.image_url && <ExamImage path={option.image_url} alt="" className="max-h-20 max-w-28 rounded-lg object-cover" />}
                 </button>
@@ -75,18 +70,10 @@ export default function QuestionPreview({ question, index, total, onBack }: {
                 className="mt-2 h-11 w-full rounded-xl border border-white/10 bg-[#202024] px-4 text-sm text-white outline-none focus:border-[#CCFF00]/45 focus:ring-2 focus:ring-[#CCFF00]/10" />
             </label>
           )}
-          {question.question_type === "ordering" && (
-            <div className="space-y-3">
-              <p className="text-xs text-white/55">Kies een nummer en plaats het op de bijbehorende positie.</p>
-              <div className="flex flex-wrap gap-2">
-                {question.options.map((option, optionIndex) => {
-                  const value = optionIndex + 1;
-                  return <button key={option.id} type="button" aria-pressed={number === value} onClick={() => setNumber(value)}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold ${number === value ? "border-[#CCFF00] bg-[#CCFF00] text-[#10140a]" : "border-white/15 bg-white/[0.03] text-white/70 hover:border-white/30"}`}>{value}</button>;
-                })}
-              </div>
-            </div>
+          {question.question_type === "ordering" && question.image_url && (
+            <OrderingQuestion key={question.id} imageUrl={question.image_url} options={question.options} value={assigned} onChange={setAssigned} />
           )}
+          {(question.question_type === "single_drag" || question.question_type === "hotspot") && question.image_url && <ZoneQuestion imageUrl={question.image_url} options={question.options} value={selected} onChange={setSelected} mode={question.question_type} />}
           <button type="button" aria-pressed={marked} onClick={() => setMarked((value) => !value)}
             className={`min-h-11 rounded-xl border px-4 py-2.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-[#CCFF00] ${marked ? "border-[#CCFF00]/30 bg-[#CCFF00]/10 text-[#eaff9b]" : "border-white/10 bg-white/[0.03] text-white/70 hover:border-white/25"}`}>
             Markeer voor later <span aria-hidden="true" className="ml-1">⚑</span>

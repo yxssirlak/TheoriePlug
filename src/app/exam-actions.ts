@@ -3,7 +3,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { z } from "zod";
-import { adminExamLoadSchema, examSchema, EXAM_MAX_QUESTIONS } from "../lib/exam-simulator";
+import { adminExamLoadSchema, examSchema, EXAM_MAX_QUESTIONS, EXAM_QUESTION_TYPES } from "../lib/exam-simulator";
+import { examReviewSchema } from "../lib/exam-review";
 
 async function session(admin = false) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -98,6 +99,28 @@ export async function listStudentExams() {
   })).parse(data);
 }
 
+export async function loadExamReview(attemptId: string) {
+  const id = z.string().uuid().safeParse(attemptId);
+  if (!id.success) return { ok: false as const, error: "Ongeldige examenpoging." };
+  try {
+    const client = await session();
+    const { data, error } = await client.rpc("exam_attempt_review", { p_attempt_id: id.data });
+    if (error) {
+      console.error("Examen nakijken mislukt:", error.message);
+      return { ok: false as const, error: "De vragen konden niet worden geladen. Controleer je toegang en probeer opnieuw." };
+    }
+    const review = examReviewSchema.safeParse(data);
+    if (!review.success) {
+      console.error("Ongeldige momentopname bij examen nakijken:", review.error.message);
+      return { ok: false as const, error: "De opgeslagen vragen konden niet worden weergegeven. Neem contact op met de beheerder." };
+    }
+    return { ok: true as const, questions: review.data };
+  } catch (error) {
+    console.error("Examen nakijken mislukt:", error);
+    return { ok: false as const, error: "De vragen konden niet worden geladen. Controleer of je bent ingelogd en probeer opnieuw." };
+  }
+}
+
 export async function attemptAction(input: {
   examId: string; action: "start" | "get" | "save" | "submit"; attemptId?: string;
   answers?: Record<string, unknown>; marks?: string[]; revision?: number;
@@ -127,6 +150,6 @@ export async function attemptAction(input: {
     score: z.number().nullable(), question_count: z.number(), passing_score: z.number(),
     result: z.array(z.object({ question_id: z.string(), question_text: z.string(), correct: z.boolean(), explanation: z.string() })).nullable(),
     questions: z.array(z.object({ id: z.string().uuid(), question_text: z.string(), image_url: z.string().nullable(),
-      question_type: z.enum(["number", "multiple_choice", "ordering"]), options: z.array(option) })),
+      question_type: z.enum(EXAM_QUESTION_TYPES), options: z.array(option) })),
   }).parse(data);
 }

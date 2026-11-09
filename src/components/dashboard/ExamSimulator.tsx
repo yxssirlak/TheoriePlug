@@ -1,14 +1,18 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { attemptAction, listStudentExams } from "../../app/exam-actions";
 import { EXAM_MAX_QUESTIONS, EXAM_TIME_LIMIT_MINUTES } from "../../lib/exam-simulator";
+import { answerStatus, remainingMinutes } from "../../lib/exam-interaction";
 import ExamImage from "../ui/ExamImage";
 import Notification from "../ui/Notification";
 import PageSkeleton from "../ui/PageSkeleton";
 import { useDialogs } from "../admin/Dialog";
 import { PageHeader } from "./ContentState";
+import OrderingQuestion from "./OrderingQuestion";
+import { useUser } from "./user-context";
+import ExamResults from "./ExamResults";
+import ZoneQuestion from "./ZoneQuestion";
 
 type Exam = Awaited<ReturnType<typeof listStudentExams>>[number];
 type Attempt = Awaited<ReturnType<typeof attemptAction>>;
@@ -18,6 +22,7 @@ const primary = "rounded-xl bg-lime px-5 py-3 font-bold text-ink disabled:opacit
 const errorText = (error: unknown) => error instanceof Error ? error.message : "Er is een fout opgetreden.";
 
 export default function ExamSimulator() {
+  const user = useUser();
   const [exams, setExams] = useState<Exam[]>([]);
   const [selected, setSelected] = useState<Exam | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null);
@@ -146,26 +151,60 @@ export default function ExamSimulator() {
     {exams.length === 0 ? <p className="rounded-2xl bg-surface p-6 text-paper/70">Er zijn nog geen examens beschikbaar voor jouw pakket.</p> : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{exams.map((exam) => <button key={exam.id} className="rounded-3xl border border-white/10 bg-surface p-6 text-left hover:border-lime" onClick={() => setSelected(exam)}><h2 className="text-xl font-bold">{exam.title}</h2><p className="mt-2 text-paper/60">{exam.description}</p><p className="mt-4 text-sm">{exam.time_limit_minutes} minuten · {exam.question_count} vragen</p><p className="mt-2 text-lime">{exam.active_attempt ? "Poging hervatten" : exam.best_score !== null ? `Hoogste score: ${exam.best_score} goed` : "Nog niet gemaakt"}</p></button>)}</div>}
   </>;
   if (!attempt) return <>{notification}<div className="max-w-2xl rounded-3xl border border-lime/30 bg-surface p-6"><button className={button} onClick={() => setSelected(null)}>← Alle examens</button><h1 className="mt-6 text-3xl font-bold">{selected.title}</h1><p className="mt-3 text-paper/70">{selected.description}</p><ul className="mt-5 list-disc space-y-2 pl-5 text-paper/80"><li>{selected.question_count} vragen · maximaal {EXAM_MAX_QUESTIONS} vragen · {EXAM_TIME_LIMIT_MINUTES} minuten totaal.</li><li>Je slaagt bij minimaal {selected.passing_score} van de {selected.question_count} vragen goed (88%).</li><li>Je kunt vragen markeren en terugkijken. De tijd loopt door als je de pagina verlaat.</li><li>Bij tijd verstreken wordt het laatst opgeslagen antwoord ingeleverd.</li></ul><button className={`${primary} mt-6`} disabled={busy} onClick={() => void begin(selected)}>{busy ? "Bezig..." : selected.active_attempt ? "Poging hervatten" : "Start examen"}</button></div></>;
-  if (attempt.status === "completed") return <>{notification}<div className="max-w-3xl space-y-5 rounded-3xl border border-white/10 bg-surface p-6"><h1 className={`text-3xl font-bold ${(attempt.score ?? 0) >= attempt.passing_score ? "text-lime" : "text-red-400"}`}>{(attempt.score ?? 0) >= attempt.passing_score ? "Geslaagd" : "Gezakt"}</h1><p>{attempt.score} van {attempt.question_count} goed · Geslaagd bij minimaal {attempt.passing_score} goede antwoorden (88%).</p><div className="space-y-3">{attempt.result?.map((result, i) => <div key={result.question_id} className="rounded-xl bg-white/5 p-4"><strong className={result.correct ? "text-lime" : "text-red-400"}>{i + 1}. {result.correct ? "Goed" : "Fout"}</strong><p>{result.question_text}</p>{result.explanation && <p className="mt-2 text-sm text-paper/70">{result.explanation}</p>}</div>)}</div><button className={primary} onClick={() => void backToExams()}>Terug naar examens</button></div></>;
+  if (attempt.status === "completed") return <>{notification}<ExamResults key={attempt.id} attemptId={attempt.id} score={attempt.score} passingScore={attempt.passing_score} questionCount={attempt.question_count} results={attempt.result} answers={attempt.answers} onBack={() => void backToExams()} /></>;
   const q = attempt.questions[index];
   if (!q) return <Notification>De vragen konden niet worden geladen. Herlaad de pagina.</Notification>;
   const numericAnswer = answers[q.id];
   const ordering = typeof answers[q.id] === "object" && answers[q.id] !== null && !Array.isArray(answers[q.id]) ? answers[q.id] as Record<string, number> : {};
-  function place(id: string, value: number) {
-    const next = { ...ordering };
-    for (const key of Object.keys(next)) if (next[key] === value) delete next[key];
-    if (value) next[id] = value; else delete next[id];
-    answer(next);
-  }
-  return <>{element}{notification}<div className="mx-auto max-w-4xl space-y-5">
-    <div className="rounded-2xl border border-white/10 bg-surface p-4"><div className="flex flex-wrap justify-between gap-2"><strong>Vraag {index + 1} van {attempt.question_count}</strong><strong aria-label="Resterende tijd">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</strong></div><div className="mt-3 h-2 rounded-full bg-white/10"><div className="h-full rounded-full bg-lime" style={{ width: `${(index + 1) / attempt.question_count * 100}%` }} /></div><p className="mt-2 text-xs text-paper/60">{saving ? "Antwoorden opslaan..." : unsaved ? "Niet opgeslagen" : "Antwoorden opgeslagen"}{unsaved && !saving && <button className="ml-3 text-lime underline" onClick={() => void persist(progress.current.answers, progress.current.marks)}>Opnieuw opslaan</button>}</p></div>
-    {overview ? <div className="rounded-2xl bg-surface p-5"><h2 className="mb-4 text-xl font-bold">Overzicht</h2><div className="flex flex-wrap gap-2">{attempt.questions.map((item, i) => <button key={item.id} className={button} onClick={() => { setIndex(i); setOverview(false); }}>{i + 1}{marks.includes(item.id) ? " ⚑" : ""}{answers[item.id] !== undefined ? " ✓" : ""}</button>)}</div><button className={`${button} mt-5`} onClick={() => setOverview(false)}>Terug naar vraag</button></div> : <div className="space-y-5 rounded-2xl bg-surface p-5"><h1 className="text-xl font-bold">{q.question_text}</h1>
-      {q.image_url && <div className="relative max-w-3xl"><ExamImage path={q.image_url} alt="Media bij de vraag" className="block h-auto w-full rounded-xl" />{q.question_type === "ordering" && q.options.map((o) => <div key={o.id} data-zone={o.id} aria-hidden="true" style={{ left: `${o.coordinates_x}%`, top: `${o.coordinates_y}%` }} className="absolute flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-lime bg-ink/80 font-bold text-lime">{ordering[o.id] ?? "?"}</div>)}</div>}
-      {q.question_type === "multiple_choice" && <div className="grid gap-3">{q.options.map((o, i) => <button key={o.id} onClick={() => answer(o.id)} className={`${button} text-left ${answers[q.id] === o.id ? "border-lime bg-lime/10" : ""}`}><span>{String.fromCharCode(65 + i)}. {o.option_text}</span>{o.image_url && <ExamImage path={o.image_url} alt={`Afbeelding antwoord ${String.fromCharCode(65 + i)}`} className="mt-2 max-h-36 rounded-xl" />}</button>)}</div>}
+  return <>{element}{notification}<div className="mx-auto flex min-h-[calc(100dvh-13rem)] max-w-4xl flex-col gap-5">
+    <header className="rounded-2xl border border-white/10 bg-surface p-4">
+      <div className="grid grid-cols-2 items-center gap-3 sm:grid-cols-3">
+        <div className="min-w-0">
+          <span className="block truncate text-base font-bold text-paper">{user.name.trim().split(/\s+/)[0]}</span>
+          <span className="block text-[10px] font-bold uppercase tracking-widest text-paper/50">B Theorie</span>
+        </div>
+        <div className="order-first col-span-2 text-center sm:order-none sm:col-span-1">
+          <span className="block text-[10px] font-bold uppercase tracking-widest text-paper/50">Resterende tijd</span>
+          <div aria-label={`Resterende tijd: ${remainingMinutes(seconds)} minuten`}>
+            <strong aria-hidden="true" className="block font-mono text-xl text-lime">{remainingMinutes(seconds)}</strong>
+            <span aria-hidden="true" className="block text-xs text-paper/60">minuten</span>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button type="button" className={`${button} px-3 py-2 text-sm ${marks.includes(q.id) ? "border-amber-400 bg-amber-400/15 text-amber-300" : ""}`} onClick={mark} disabled={busy} aria-pressed={marks.includes(q.id)} aria-label={marks.includes(q.id) ? "Markering verwijderen" : "Markeer voor later"} title={marks.includes(q.id) ? "Markering verwijderen" : "Markeer voor later"}>⚑ <span className="hidden sm:inline">{marks.includes(q.id) ? "Gemarkeerd" : "Markeer"}</span></button>
+          <button type="button" className={`${button} px-3 py-2 text-sm ${overview ? "border-lime text-lime" : ""}`} aria-label="Overzicht" aria-pressed={overview} onClick={() => setOverview(!overview)}>▦ <span className="hidden sm:inline">Overzicht</span></button>
+        </div>
+      </div>
+    </header>
+    {unsaved && !saving && <p role="status" className="text-sm text-amber-300">Antwoorden niet opgeslagen.<button className="ml-3 text-lime underline" onClick={() => void persist(progress.current.answers, progress.current.marks)}>Opnieuw opslaan</button></p>}
+    {overview ? <section className="rounded-2xl border border-white/10 bg-surface p-5"><h2 className="mb-4 text-xl font-bold">Overzicht</h2>
+      <div className="mb-5 flex flex-wrap gap-x-4 gap-y-2 text-xs text-paper/70"><span><span className="text-lime">●</span> Ingevuld</span><span><span className="text-amber-300">⚑</span> Gemarkeerd</span><span><span className="text-sky-300">◐</span> Deels ingevuld</span><span><span className="text-paper/50">○</span> Niet ingevuld</span></div>
+      <div className="flex flex-wrap gap-2">{attempt.questions.map((item, i) => {
+        const status = answerStatus(item, answers[item.id]);
+        const marked = marks.includes(item.id);
+        const statusText = status === "answered" ? "ingevuld" : status === "partial" ? "deels ingevuld" : "niet ingevuld";
+        const color = marked ? "border-amber-400/70 bg-amber-400/15 text-amber-200" : status === "answered" ? "border-lime/60 bg-lime/15 text-lime" : status === "partial" ? "border-sky-400/60 bg-sky-400/10 text-sky-200" : "border-white/20 text-paper/70";
+        return <button key={item.id} type="button" aria-label={`Vraag ${i + 1}, ${statusText}${marked ? ", gemarkeerd" : ""}`} aria-current={index === i ? "step" : undefined} className={`min-h-12 min-w-12 rounded-xl border px-3 font-bold transition focus-visible:outline-2 focus-visible:outline-lime ${color} ${index === i ? "ring-2 ring-white/50" : ""}`} onClick={() => { setIndex(i); setOverview(false); }}>{i + 1}<span aria-hidden="true" className="ml-1">{status === "answered" ? "✓" : status === "partial" ? "◐" : ""}{marked ? "⚑" : ""}</span></button>;
+      })}</div>
+      <div className="mt-5 flex flex-wrap gap-3"><button className={button} onClick={() => setOverview(false)}>Terug naar vraag</button><button className={`${primary} ml-auto`} disabled={busy} onClick={() => void finish()}>{busy ? "Inleveren..." : "Examen inleveren"}</button></div>
+    </section> : <section className="space-y-5 rounded-2xl border border-white/10 bg-surface p-5 sm:p-6"><h1 className="text-xl font-bold">{q.question_text}</h1>
+      {q.image_url && !["ordering", "single_drag", "hotspot"].includes(q.question_type) && <div className="max-w-3xl"><ExamImage path={q.image_url} alt="Media bij de vraag" className="block h-auto w-full rounded-xl" /></div>}
+      {["multiple_choice", "yes_no", "multiple_response"].includes(q.question_type) && <div className="grid gap-3">{q.options.map((o, i) => {
+        const multiple = q.question_type === "multiple_response";
+        const currentAnswer = answers[q.id];
+        const selectedAnswers = Array.isArray(currentAnswer) ? currentAnswer.filter((id): id is string => typeof id === "string") : [];
+        const selected = multiple ? selectedAnswers.includes(o.id) : currentAnswer === o.id;
+        return <button key={o.id} type="button" aria-pressed={selected} onClick={() => answer(multiple ? selected ? selectedAnswers.filter((id) => id !== o.id) : [...selectedAnswers, o.id] : o.id)} className={`${button} text-left ${selected ? "border-lime bg-lime/10" : ""}`}><span>{String.fromCharCode(65 + i)}. {o.option_text}</span>{o.image_url && <ExamImage path={o.image_url} alt={`Afbeelding antwoord ${String.fromCharCode(65 + i)}`} className="mt-2 max-h-36 rounded-xl" />}</button>;
+      })}</div>}
       {q.question_type === "number" && <label className="block">Je antwoord<input type="text" inputMode="decimal" className="mt-2 block w-full max-w-xs rounded-xl border border-white/20 bg-ink p-3" value={typeof numericAnswer === "string" ? numericAnswer : ""} onChange={(e) => { if (/^-?\d*(?:[.,]\d*)?$/.test(e.target.value) && e.target.value.length <= 64) answer(e.target.value); }} /></label>}
-      {q.question_type === "ordering" && <><p className="text-paper/70">Sleep de nummers naar de posities op de media, of kies de volgorde hieronder.</p><div className="flex gap-3">{q.options.map((_, i) => <motion.button key={i} drag dragSnapToOrigin dragMomentum={false} onDragEnd={(_, info) => { const x = info.point.x - window.scrollX; const y = info.point.y - window.scrollY; const zone = Array.from(document.querySelectorAll<HTMLElement>("[data-zone]")).find((item) => { const rect = item.getBoundingClientRect(); return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom; }); if (zone?.dataset.zone) place(zone.dataset.zone, i + 1); }} className="relative z-10 h-12 w-12 touch-none rounded-full bg-lime font-bold text-ink" aria-label={`Sleep volgordenummer ${i + 1}`}>{i + 1}</motion.button>)}</div><div className="grid gap-2">{q.options.map((o, i) => <label key={o.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 p-3"><span>{o.option_text || `Positie ${i + 1}`} (X {o.coordinates_x}%, Y {o.coordinates_y}%)</span><select className="rounded-lg bg-ink p-2" value={ordering[o.id] ?? ""} onChange={(e) => place(o.id, Number(e.target.value))}><option value="">Kies</option>{q.options.map((_, n) => <option key={n} value={n + 1}>{n + 1}</option>)}</select></label>)}</div></>}
-      <button className={button} onClick={mark}>{marks.includes(q.id) ? "Markering verwijderen" : "Markeer voor later"}</button>
-    </div>}
-    <div className="flex flex-wrap gap-2"><button className={button} disabled={index === 0 || busy} onClick={() => { setIndex(index - 1); setOverview(false); }}>Vorige</button><button className={button} disabled={busy} onClick={() => setOverview(!overview)}>Overzicht</button><button className={button} disabled={index >= attempt.questions.length - 1 || busy} onClick={() => { setIndex(index + 1); setOverview(false); }}>Volgende</button><button className={`${primary} ml-auto`} disabled={busy} onClick={() => void finish()}>{busy ? "Inleveren..." : "Inleveren"}</button></div>
+      {q.question_type === "ordering" && q.image_url && <OrderingQuestion key={q.id} imageUrl={q.image_url} options={q.options} value={ordering} onChange={answer} />}
+      {q.question_type === "ordering" && !q.image_url && <p role="alert" className="text-red-300">De afbeelding voor deze sleepvraag ontbreekt.</p>}
+      {(q.question_type === "single_drag" || q.question_type === "hotspot") && (q.image_url ? <ZoneQuestion key={q.id} imageUrl={q.image_url} options={q.options} value={typeof answers[q.id] === "string" ? answers[q.id] as string : null} onChange={answer} mode={q.question_type} /> : <p role="alert" className="text-red-300">De afbeelding bij deze vraag ontbreekt.</p>)}
+    </section>}
+    <nav aria-label="Vragennavigatie" className="sticky bottom-20 z-30 mt-auto grid grid-cols-3 items-center gap-2 rounded-2xl border border-white/10 bg-surface/95 p-3 shadow-xl backdrop-blur lg:bottom-4">
+      <button className={`${button} justify-self-start`} disabled={index === 0 || busy} onClick={() => { setIndex(index - 1); setOverview(false); }}>← Vorige</button>
+      <span className="text-center text-sm font-bold text-paper/70">Vraag {index + 1} van {attempt.question_count}</span>
+      {index < attempt.questions.length - 1 ? <button className={`${primary} justify-self-end`} disabled={busy} onClick={() => { setIndex(index + 1); setOverview(false); }}>Volgende →</button> : <button className={`${primary} justify-self-end`} disabled={busy} onClick={() => void finish()}>{busy ? "Bezig..." : "Inleveren"}</button>}
+    </nav>
   </div></>;
 }

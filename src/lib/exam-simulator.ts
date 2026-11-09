@@ -3,6 +3,7 @@ import { z } from "zod";
 export const EXAM_MAX_QUESTIONS = 50;
 export const EXAM_PASSING_SCORE = 44;
 export const EXAM_TIME_LIMIT_MINUTES = 30;
+export const EXAM_QUESTION_TYPES = ["multiple_choice", "yes_no", "multiple_response", "number", "ordering", "single_drag", "hotspot"] as const;
 
 export function passingScoreForQuestionCount(questionCount: number) {
   return questionCount > 0 ? Math.ceil(questionCount * EXAM_PASSING_SCORE / EXAM_MAX_QUESTIONS) : 0;
@@ -24,7 +25,7 @@ export const examQuestionSchema = z.object({
   id: uuid,
   question_text: z.string().trim().min(1).max(5000),
   image_url: imagePath,
-  question_type: z.enum(["multiple_choice", "number", "ordering"]),
+  question_type: z.enum(EXAM_QUESTION_TYPES),
   correct_number: z.number().finite().min(-1_000_000_000).max(1_000_000_000).nullable(),
   explanation: z.string().max(5000),
   options: z.array(optionSchema).max(4),
@@ -38,12 +39,21 @@ export const examQuestionSchema = z.object({
     return;
   }
   if (question.correct_number !== null) error("Alleen een getalvraag mag een numeriek antwoord hebben.");
-  if (question.question_type === "multiple_choice") {
-    if (question.options.length < 2 || question.options.filter((option) => option.is_correct).length !== 1) {
-      error("Kies twee tot vier opties en precies één correct antwoord.");
+  if (question.question_type === "multiple_choice" || question.question_type === "yes_no" || question.question_type === "multiple_response") {
+    const correctCount = question.options.filter((option) => option.is_correct).length;
+    if (question.options.length < 2 || (question.question_type === "yes_no" && question.options.length !== 2)
+      || (question.question_type === "multiple_response" ? correctCount < 1 : correctCount !== 1)) {
+      error(question.question_type === "multiple_response" ? "Kies minimaal één correct antwoord." : "Kies twee tot vier opties en precies één correct antwoord.");
     }
     if (question.options.some((option) => (!option.option_text.trim() && !option.image_url) || option.coordinates_x !== null || option.coordinates_y !== null || option.correct_order !== null)) {
       error("Elke keuze heeft tekst of een afbeelding nodig en mag geen volgorde of positie bevatten.");
+    }
+    return;
+  }
+  if (question.question_type === "single_drag" || question.question_type === "hotspot") {
+    if (!question.image_url || question.options.length < 2 || question.options.filter((option) => option.is_correct).length !== 1
+      || question.options.some((option) => option.coordinates_x === null || option.coordinates_y === null || option.image_url !== null || option.correct_order !== null)) {
+      error("Plaats minimaal twee posities op de afbeelding en kies precies één juiste positie.");
     }
     return;
   }
@@ -95,7 +105,7 @@ export const adminExamLoadSchema = examBaseSchema.superRefine(validateExamDefini
 
 export type ExamDefinition = z.infer<typeof examSchema>;
 export type ExamQuestion = z.infer<typeof examQuestionSchema>;
-export type ExamAnswer = string | Record<string, number>;
+export type ExamAnswer = string | string[] | Record<string, number>;
 
 export function studentQuestion(question: ExamQuestion) {
   const options = question.question_type === "ordering"
@@ -127,8 +137,13 @@ export function validateAttemptProgress(
   return Object.entries(answerMap.data).every(([id, answer]) => {
     const question = byId.get(id);
     if (!question) return false;
-    if (question.question_type === "multiple_choice") {
+    if (["multiple_choice", "yes_no", "single_drag", "hotspot"].includes(question.question_type)) {
       return typeof answer === "string" && question.options.some((option) => option.id === answer);
+    }
+    if (question.question_type === "multiple_response") {
+      return Array.isArray(answer) && answer.length <= question.options.length
+        && new Set(answer).size === answer.length
+        && answer.every((id) => typeof id === "string" && question.options.some((option) => option.id === id));
     }
     if (question.question_type === "number") {
       return typeof answer === "string" && answer.length <= 64 && /^-?\d*(?:[.,]\d*)?$/.test(answer);
@@ -145,8 +160,13 @@ export function validateAttemptProgress(
 }
 
 export function isCorrectAnswer(question: ExamQuestion, answer: unknown): boolean {
-  if (question.question_type === "multiple_choice") {
+  if (["multiple_choice", "yes_no", "single_drag", "hotspot"].includes(question.question_type)) {
     return typeof answer === "string" && question.options.some((option) => option.id === answer && option.is_correct);
+  }
+  if (question.question_type === "multiple_response") {
+    if (!Array.isArray(answer) || new Set(answer).size !== answer.length) return false;
+    const correct = question.options.filter((option) => option.is_correct);
+    return correct.length > 0 && answer.length === correct.length && correct.every((option) => answer.includes(option.id));
   }
   if (question.question_type === "number") {
     if (typeof answer !== "string" || !/^-?\d+(?:[.,]\d+)?$/.test(answer.trim())) return false;

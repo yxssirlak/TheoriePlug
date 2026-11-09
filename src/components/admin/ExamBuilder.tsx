@@ -8,6 +8,7 @@ import {
   EXAM_MAX_QUESTIONS,
   EXAM_PASSING_SCORE,
   EXAM_TIME_LIMIT_MINUTES,
+  EXAM_QUESTION_TYPES,
   passingScoreForQuestionCount,
   type ExamDefinition,
   type ExamQuestion,
@@ -47,6 +48,7 @@ function createOption(number: number, ordering = false): ExamQuestion["options"]
 
 function createQuestion(type: QuestionType): ExamQuestion {
   const ordering = type === "ordering";
+  const imageChoice = type === "hotspot" || type === "single_drag";
   return {
     id: crypto.randomUUID(),
     question_text: "",
@@ -54,7 +56,16 @@ function createQuestion(type: QuestionType): ExamQuestion {
     question_type: type,
     correct_number: type === "number" ? 0 : null,
     explanation: "",
-    options: type === "number" ? [] : Array.from({ length: ordering ? 3 : 2 }, (_, index) => createOption(index + 1, ordering)),
+    options: type === "number" ? [] : Array.from({ length: ordering ? 3 : 2 }, (_, index) => {
+      const option = createOption(index + 1, ordering);
+      if (type === "yes_no") option.option_text = index === 0 ? "Ja" : "Nee";
+      if (imageChoice) {
+        option.option_text = `Positie ${index + 1}`;
+        option.coordinates_x = 35 + index * 30;
+        option.coordinates_y = 50;
+      }
+      return option;
+    }),
   };
 }
 
@@ -72,7 +83,7 @@ function createExam(): ExamDefinition {
 }
 
 function typeLabel(type: QuestionType) {
-  return type === "multiple_choice" ? "Meerkeuze" : type === "number" ? "Getal" : "Voorrang";
+  return ({ multiple_choice: "Meerkeuze", yes_no: "Ja / nee", multiple_response: "Meerdere antwoorden", number: "Invulvraag (getal)", ordering: "Sleepvraag", single_drag: "Single-sleep", hotspot: "Hotspot" })[type];
 }
 
 export default function ExamBuilder() {
@@ -381,7 +392,7 @@ export default function ExamBuilder() {
                 <section aria-labelledby="add-question-title" className="rounded-3xl border border-white/[0.08] bg-[#18181b] p-4">
                   <h2 id="add-question-title" className="text-xs font-bold uppercase tracking-[0.13em] text-white/50">Vraag toevoegen</h2>
                   <div className="mt-3 grid grid-cols-3 gap-2">
-                    {(["multiple_choice", "number", "ordering"] as const).map((type) => (
+                    {EXAM_QUESTION_TYPES.map((type) => (
                       <button key={type} type="button" onClick={() => addQuestion(type)} disabled={exam.questions.length >= EXAM_MAX_QUESTIONS || busy}
                         className="group rounded-xl border border-white/[0.08] bg-white/[0.02] px-2 py-3 text-center transition hover:border-[#CCFF00]/30 hover:bg-[#CCFF00]/[0.04] focus-visible:outline-2 focus-visible:outline-[#CCFF00] disabled:opacity-35">
                         <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.05] text-[#CCFF00] transition group-hover:bg-[#CCFF00]/10">{type === "multiple_choice" ? "A" : type === "number" ? "123" : "↕"}</span>
@@ -413,7 +424,7 @@ export default function ExamBuilder() {
                     <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#CCFF00]/15 bg-[#CCFF00]/[0.04] text-2xl text-[#CCFF00]">✳</span>
                     <h2 className="mt-5 text-lg font-bold text-white">{exam.questions.length ? "Selecteer een vraag" : "Begin met je eerste vraag"}</h2>
                     <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/45">{exam.questions.length ? "Kies een vraag in het overzicht om de inhoud aan te passen of de leerlingweergave te bekijken." : "Kies links een vraagtype. Je kunt later de media, antwoordopties en eventuele dropzones instellen."}</p>
-                    {!exam.questions.length && <div className="mt-5 flex flex-wrap justify-center gap-2">{(["multiple_choice", "number", "ordering"] as const).map((type) => <button key={type} type="button" onClick={() => addQuestion(type)} disabled={busy} className={quietButton}>+ {typeLabel(type)}</button>)}</div>}
+                    {!exam.questions.length && <div className="mt-5 flex flex-wrap justify-center gap-2">{EXAM_QUESTION_TYPES.map((type) => <button key={type} type="button" onClick={() => addQuestion(type)} disabled={busy} className={quietButton}>+ {typeLabel(type)}</button>)}</div>}
                   </motion.section>
                 )}
               </AnimatePresence>
