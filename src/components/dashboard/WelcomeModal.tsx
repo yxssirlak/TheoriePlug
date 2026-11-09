@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { createClient } from "../../lib/supabase"; 
 import GlassDatePicker from "./GlassDatePicker"; // Zorg dat het pad klopt met waar je hem hebt opgeslagen
+import Notification from "../ui/Notification";
 
 export default function WelcomeModal({
   userId,
@@ -125,7 +126,7 @@ export default function WelcomeModal({
               />
             </div>
             
-            {saveError && <p role="alert" className="text-sm font-semibold text-red-300">{saveError}</p>}
+            {saveError && <Notification onDismiss={() => setSaveError("")}>{saveError}</Notification>}
 
             <button
               type="submit"

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUser } from "../../../components/dashboard/user-context";
 import AuthenticatedPage from "../../../components/dashboard/AuthenticatedPage";
+import Notification from "../../../components/ui/Notification";
 
 const QUICK_ACTIONS = [
   { href: "/oefenexamens", sticker: "oefenexamens", title: "Oefenexamen starten", text: "Doe een examen zoals bij het CBR.", accent: true },
@@ -67,14 +68,9 @@ function DashboardContent() {
   return (
     <div className="space-y-8">
       {success && (
-        <div role="status" className="fixed bottom-4 right-4 z-[90] flex w-[calc(100%-2rem)] max-w-sm items-start justify-between gap-4 rounded-2xl border border-lime/40 bg-[#0a1f1a]/95 px-5 py-4 shadow-2xl backdrop-blur-xl sm:bottom-6 sm:right-6">
-          <p className="font-semibold text-lime">
-            Betaling gelukt! Je pakket is actief. Veel succes met oefenen!
-          </p>
-          <button type="button" onClick={() => setSuccess(false)} aria-label="Sluiten" className="text-paper/60 transition-colors hover:text-paper">
-            ✕
-          </button>
-        </div>
+        <Notification type="success" onDismiss={() => setSuccess(false)}>
+          Betaling gelukt! Je pakket is actief. Veel succes met oefenen!
+        </Notification>
       )}
       <section>
         <p className="text-paper/60">{greeting()},</p>

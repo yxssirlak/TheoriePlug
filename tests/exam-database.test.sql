@@ -49,6 +49,8 @@ begin
   end if;
   d_invalid := jsonb_set(d, '{questions}', jsonb_build_array(d->'questions'->0));
   perform public.exam_save_definition(d_invalid);
+  set constraints exams_integrated_question_limits, questions_integrated_question_limits immediate;
+  set constraints exams_integrated_question_limits, questions_integrated_question_limits deferred;
   if jsonb_array_length(public.exam_admin_definition(t.exam_id)->'questions') <> 1
     or public.exam_admin_definition(t.exam_id)->>'is_published' <> 'true' then
     raise exception 'Gepubliceerd examen met één vraag mislukt';
@@ -69,10 +71,16 @@ begin
   end if;
   perform set_config('request.jwt.claim.sub', t.admin_id::text, true);
   perform public.exam_save_definition(d);
+  d_invalid := jsonb_set(d, '{questions}', jsonb_build_array(d->'questions'->0, d->'questions'->1));
+  perform public.exam_save_definition(d_invalid);
+  set constraints exams_integrated_question_limits, questions_integrated_question_limits immediate;
+  set constraints exams_integrated_question_limits, questions_integrated_question_limits deferred;
   d_invalid := jsonb_set(d, '{questions}', (
     select jsonb_agg(value) from jsonb_array_elements(d->'questions') with ordinality where ordinality <= 43
   ));
   perform public.exam_save_definition(d_invalid);
+  set constraints exams_integrated_question_limits, questions_integrated_question_limits immediate;
+  set constraints exams_integrated_question_limits, questions_integrated_question_limits deferred;
   if public.exam_admin_definition(t.exam_id)->>'is_published' <> 'true' then
     raise exception 'Gepubliceerd examen met 43 vragen mislukt';
   end if;
@@ -153,4 +161,33 @@ begin
 end;
 $$;
 reset role;
+do $$
+declare
+  v_exam_id uuid;
+  v_rejected boolean;
+begin
+  select exam_id into v_exam_id from exam_test_ids;
+  v_rejected := false;
+  begin
+    delete from public.questions where exam_id = v_exam_id;
+    set constraints exams_integrated_question_limits, questions_integrated_question_limits immediate;
+  exception when raise_exception then
+    if sqlerrm <> 'Een gepubliceerd examen heeft minimaal één vraag nodig' then raise; end if;
+    v_rejected := true;
+  end;
+  if not v_rejected then raise exception 'Trigger stond een gepubliceerd examen zonder vragen toe'; end if;
+
+  v_rejected := false;
+  begin
+    insert into public.questions (id, exam_id, question_text, question_type, correct_number, sort_order)
+    select gen_random_uuid(), v_exam_id, 'Extra vraag', 'number', 1, n
+    from generate_series(1, 7) n;
+    set constraints exams_integrated_question_limits, questions_integrated_question_limits immediate;
+  exception when raise_exception then
+    if sqlerrm <> 'Een examen kan maximaal 50 vragen bevatten' then raise; end if;
+    v_rejected := true;
+  end;
+  if not v_rejected then raise exception 'Trigger stond een examen met meer dan 50 vragen toe'; end if;
+end;
+$$;
 rollback;

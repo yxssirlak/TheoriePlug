@@ -50,11 +50,20 @@ export async function loadAdminExam(id: string) {
 }
 
 export async function saveAdminExam(input: unknown) {
-  const client = await session(true);
-  const parsed = examSchema.safeParse(input);
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Ongeldige examengegevens.");
-  const { error } = await client.rpc("exam_save_definition", { p_definition: parsed.data });
-  if (error) failure(error, "Examen opslaan mislukt.");
+  try {
+    const client = await session(true);
+    const parsed = examSchema.safeParse(input);
+    if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Ongeldige examengegevens." };
+    const { error } = await client.rpc("exam_save_definition", { p_definition: parsed.data });
+    if (error) {
+      console.error("Examen opslaan mislukt:", error.message);
+      return { ok: false as const, error: "Examen opslaan mislukt. Controleer je verbinding en probeer opnieuw." };
+    }
+    return { ok: true as const };
+  } catch (error) {
+    console.error("Examen opslaan mislukt:", error);
+    return { ok: false as const, error: "Examen opslaan mislukt. Controleer of je bent ingelogd en probeer opnieuw." };
+  }
 }
 
 export async function prepareExamImage(examId: string, mime: string, size: number) {

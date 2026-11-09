@@ -89,7 +89,9 @@ export default function ExamBuilder() {
 
   function fail(error: unknown) {
     setMessage({
-      text: error instanceof Error ? error.message : "Er is een fout opgetreden.",
+      text: error instanceof Error && !error.message.includes("Minified React error")
+        ? error.message
+        : "Er is een fout opgetreden. Probeer het opnieuw.",
       type: "error",
     });
   }
@@ -183,7 +185,8 @@ export default function ExamBuilder() {
     }
     setBusy(true);
     try {
-      await saveAdminExam(parsed.data);
+      const result = await saveAdminExam(parsed.data);
+      if (!result.ok) throw new Error(result.error);
       setSavedDefinition(JSON.stringify(parsed.data));
       setExam(parsed.data);
       setList((current) => [

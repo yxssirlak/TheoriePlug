@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Notification from "../ui/Notification";
 
 const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const controlsIdleDelay = 3000;
@@ -334,9 +335,7 @@ export default function BrandedVideoPlayer({ src, title, onEnded }: { src: strin
         </div>
       </div>
       
-      {error && <div role="alert" className="absolute bottom-4 right-4 z-20 flex max-w-sm gap-3 rounded-2xl border border-red-500/50 bg-[#2a0d12]/95 px-5 py-4 text-sm font-semibold text-red-300 shadow-2xl">
-        <span>{error}</span><button type="button" onClick={() => setError(null)} aria-label="Melding sluiten">✕</button>
-      </div>}
+      {error && <Notification onDismiss={() => setError(null)}>{error}</Notification>}
     </div>
   );
 }
