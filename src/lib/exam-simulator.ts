@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+export const EXAM_MAX_QUESTIONS = 50;
+export const EXAM_PASSING_SCORE = 44;
+export const EXAM_TIME_LIMIT_MINUTES = 30;
+
+export function passingScoreForQuestionCount(questionCount: number) {
+  return questionCount > 0 ? Math.ceil(questionCount * EXAM_PASSING_SCORE / EXAM_MAX_QUESTIONS) : 0;
+}
+
 const uuid = z.string().uuid();
 const imagePath = z.string().min(1).max(500).nullable();
 const optionSchema = z.object({
@@ -49,16 +57,18 @@ export const examQuestionSchema = z.object({
   }
 });
 
-export const examSchema = z.object({
+const examBaseSchema = z.object({
   id: uuid,
   title: z.string().trim().min(1).max(200),
   description: z.string().max(5000),
-  time_limit_minutes: z.number().int().min(1).max(240),
-  passing_score: z.number().int().min(1),
+  time_limit_minutes: z.literal(EXAM_TIME_LIMIT_MINUTES),
+  passing_score: z.literal(EXAM_PASSING_SCORE),
   allowed_packages: z.array(z.enum(["start", "boost", "max"])).min(1).max(3),
   is_published: z.boolean(),
-  questions: z.array(examQuestionSchema).max(200),
-}).strict().superRefine((exam, context) => {
+  questions: z.array(examQuestionSchema),
+}).strict();
+
+function validateExamDefinition(exam: z.infer<typeof examBaseSchema>, context: z.RefinementCtx) {
   if (new Set(exam.allowed_packages).size !== exam.allowed_packages.length) {
     context.addIssue({ code: "custom", message: "Een pakket kan maar één keer worden gekozen." });
   }
@@ -66,8 +76,8 @@ export const examSchema = z.object({
   if (new Set(ids).size !== ids.length) {
     context.addIssue({ code: "custom", message: "Vragen en opties moeten unieke ID's hebben." });
   }
-  if (exam.is_published && (exam.questions.length === 0 || exam.passing_score > exam.questions.length)) {
-    context.addIssue({ code: "custom", message: "Een gepubliceerd examen heeft vragen nodig en de slaaggrens mag het aantal vragen niet overschrijden." });
+  if (exam.is_published && exam.questions.length === 0) {
+    context.addIssue({ code: "custom", message: "Een examen heeft minimaal één vraag nodig om te publiceren." });
   }
   for (const question of exam.questions) {
     for (const path of [question.image_url, ...question.options.map((option) => option.image_url)]) {
@@ -76,7 +86,12 @@ export const examSchema = z.object({
       }
     }
   }
-});
+}
+
+export const examSchema = examBaseSchema
+  .extend({ questions: z.array(examQuestionSchema).max(EXAM_MAX_QUESTIONS) })
+  .superRefine(validateExamDefinition);
+export const adminExamLoadSchema = examBaseSchema.superRefine(validateExamDefinition);
 
 export type ExamDefinition = z.infer<typeof examSchema>;
 export type ExamQuestion = z.infer<typeof examQuestionSchema>;
@@ -145,7 +160,7 @@ export function isCorrectAnswer(question: ExamQuestion, answer: unknown): boolea
       && entries.some(([id, value]) => id === option.id && value === option.correct_order));
 }
 
-export function gradeExam(questions: ExamQuestion[], answers: Record<string, unknown>, passingScore: number) {
+export function gradeExam(questions: ExamQuestion[], answers: Record<string, unknown>) {
   const results = questions.map((question) => ({
     question_id: question.id,
     question_text: question.question_text,
@@ -153,5 +168,11 @@ export function gradeExam(questions: ExamQuestion[], answers: Record<string, unk
     explanation: question.explanation,
   }));
   const score = results.filter((result) => result.correct).length;
-  return { score, total: results.length, passed: score >= passingScore, results };
+  return {
+    score,
+    total: results.length,
+    passingScore: passingScoreForQuestionCount(results.length),
+    passed: results.length > 0 && score >= passingScoreForQuestionCount(results.length),
+    results,
+  };
 }

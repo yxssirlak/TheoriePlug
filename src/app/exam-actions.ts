@@ -3,7 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { z } from "zod";
-import { examSchema } from "../lib/exam-simulator";
+import { adminExamLoadSchema, examSchema, EXAM_MAX_QUESTIONS } from "../lib/exam-simulator";
 
 async function session(admin = false) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -46,7 +46,7 @@ export async function loadAdminExam(id: string) {
   const client = await session(true);
   const { data, error } = await client.rpc("exam_admin_definition", { p_exam_id: id });
   if (error) failure(error, "Examen laden mislukt.");
-  return examSchema.parse(data);
+  return adminExamLoadSchema.parse(data);
 }
 
 export async function saveAdminExam(input: unknown) {
@@ -59,12 +59,20 @@ export async function saveAdminExam(input: unknown) {
 
 export async function prepareExamImage(examId: string, mime: string, size: number) {
   z.string().uuid().parse(examId);
-  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  if (!allowed.includes(mime) || !Number.isInteger(size) || size <= 0 || size > 10 * 1024 * 1024) {
-    throw new Error("Kies een JPG, PNG, WebP of GIF van maximaal 10 MB.");
+  const maximumSize = mime === "video/mp4" ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+  const extensions: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "video/mp4": "mp4",
+  };
+  const extension = extensions[mime];
+  if (!extension || !Number.isInteger(size) || size <= 0 || size > maximumSize) {
+    throw new Error("Kies een JPG, PNG, WebP of GIF van maximaal 10 MB, of een MP4 van maximaal 50 MB.");
   }
   const client = await session(true);
-  const path = `${examId}/${crypto.randomUUID()}`;
+  const path = `${examId}/${crypto.randomUUID()}.${extension}`;
   const { data, error } = await client.storage.from("exam-images").createSignedUploadUrl(path);
   if (error) failure(error, "Upload voorbereiden mislukt.");
   return { path, token: data.token };
@@ -88,7 +96,7 @@ export async function attemptAction(input: {
   const schema = z.object({
     examId: z.string().uuid(), action: z.enum(["start", "get", "save", "submit"]),
     attemptId: z.string().uuid().optional(), answers: z.record(z.string(), z.unknown()).optional(),
-    marks: z.array(z.string().uuid()).max(200).optional(), revision: z.number().int().min(0).optional(),
+    marks: z.array(z.string().uuid()).max(EXAM_MAX_QUESTIONS).optional(), revision: z.number().int().min(0).optional(),
   }).strict();
   const request = schema.parse(input);
   const client = await session();

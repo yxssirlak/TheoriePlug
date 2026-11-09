@@ -1,5 +1,5 @@
--- Draai op een testdatabase na de migratie binnen een teruggedraaide transactie.
--- De aanroeper moet de transactie altijd terugdraaien.
+-- Alle fixtures en wijzigingen worden aan het einde van deze test teruggedraaid.
+begin;
 create temporary table exam_test_ids (admin_id uuid, student_id uuid, other_id uuid, unauthorized_id uuid, exam_id uuid, q1 uuid, q2 uuid, q3 uuid, o1 uuid, o2 uuid, o3 uuid, o4 uuid, o5 uuid);
 insert into exam_test_ids select gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid(),
   gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid();
@@ -14,12 +14,12 @@ select other_id, (select id from public.packages where lower(name) = 'start' lim
 set local role authenticated;
 do $$
 declare
-  t record; d jsonb; a jsonb; b jsonb; answer jsonb; failed boolean;
+  t record; d jsonb; d_invalid jsonb; a jsonb; b jsonb; answer jsonb; failed boolean;
 begin
   select * into t from exam_test_ids;
   perform set_config('request.jwt.claim.sub', t.admin_id::text, true);
   d := jsonb_build_object('id', t.exam_id, 'title', 'Test', 'description', '', 'time_limit_minutes', 30,
-    'passing_score', 2, 'allowed_packages', jsonb_build_array('start'), 'is_published', true, 'questions',
+    'passing_score', 44, 'allowed_packages', jsonb_build_array('start'), 'is_published', true, 'questions',
     jsonb_build_array(
       jsonb_build_object('id', t.q1, 'question_text', 'Keuze', 'question_type', 'multiple_choice', 'image_url', null, 'correct_number', null, 'explanation', 'Keuze uitleg',
         'options', jsonb_build_array(
@@ -30,9 +30,64 @@ begin
         'options', jsonb_build_array(
           jsonb_build_object('id', t.o3, 'option_text', '', 'image_url', null, 'is_correct', false, 'coordinates_x', 10, 'coordinates_y', 10, 'correct_order', 1),
           jsonb_build_object('id', t.o4, 'option_text', '', 'image_url', null, 'is_correct', false, 'coordinates_x', 20, 'coordinates_y', 20, 'correct_order', 2),
-          jsonb_build_object('id', t.o5, 'option_text', '', 'image_url', null, 'is_correct', false, 'coordinates_x', 30, 'coordinates_y', 30, 'correct_order', 3)))));
+          jsonb_build_object('id', t.o5, 'option_text', '', 'image_url', null, 'is_correct', false, 'coordinates_x', 30, 'coordinates_y', 30, 'correct_order', 3))))
+    || (select jsonb_agg(jsonb_build_object(
+      'id', gen_random_uuid(), 'question_text', 'Extra vraag ' || n, 'question_type', 'multiple_choice',
+      'image_url', null, 'correct_number', null, 'explanation', '',
+      'options', jsonb_build_array(
+        jsonb_build_object('id', gen_random_uuid(), 'option_text', 'A', 'image_url', null, 'is_correct', true,
+          'coordinates_x', null, 'coordinates_y', null, 'correct_order', null),
+        jsonb_build_object('id', gen_random_uuid(), 'option_text', 'B', 'image_url', null, 'is_correct', false,
+          'coordinates_x', null, 'coordinates_y', null, 'correct_order', null)
+      )
+    )) from generate_series(1, 41) n));
   perform public.exam_save_definition(d);
-  if jsonb_array_length(public.exam_admin_definition(t.exam_id)->'questions') <> 3 then raise exception 'Admin laden mislukt'; end if;
+  if jsonb_array_length(public.exam_admin_definition(t.exam_id)->'questions') <> 44
+    or public.exam_admin_definition(t.exam_id)->>'passing_score' <> '44'
+    or public.exam_admin_definition(t.exam_id)->>'time_limit_minutes' <> '30' then
+    raise exception 'Admin laden of vaste examenscore mislukt';
+  end if;
+  d_invalid := jsonb_set(d, '{questions}', jsonb_build_array(d->'questions'->0));
+  perform public.exam_save_definition(d_invalid);
+  if jsonb_array_length(public.exam_admin_definition(t.exam_id)->'questions') <> 1
+    or public.exam_admin_definition(t.exam_id)->>'is_published' <> 'true' then
+    raise exception 'Gepubliceerd examen met één vraag mislukt';
+  end if;
+  perform set_config('request.jwt.claim.sub', t.student_id::text, true);
+  a := public.exam_student_list()->0;
+  if (a->>'passing_score')::int <> 1 then
+    raise exception 'Slaaggrens in de examenlijst voor één vraag klopt niet: %', a;
+  end if;
+  a := public.exam_attempt_action(t.exam_id, 'start');
+  if (a->>'passing_score')::int <> 1 or (a->>'question_count')::int <> 1 then
+    raise exception 'Dynamische slaaggrens voor één vraag mislukt: %', a;
+  end if;
+  b := public.exam_attempt_action(t.exam_id, 'submit', (a->>'id')::uuid,
+    jsonb_build_object(t.q1::text, t.o1::text), '[]', 0);
+  if b->>'status' <> 'completed' or (b->>'score')::int <> 1 or (b->>'passing_score')::int <> 1 then
+    raise exception 'Beoordeling voor één vraag mislukt: %', b;
+  end if;
+  perform set_config('request.jwt.claim.sub', t.admin_id::text, true);
+  perform public.exam_save_definition(d);
+  d_invalid := jsonb_set(d, '{questions}', (
+    select jsonb_agg(value) from jsonb_array_elements(d->'questions') with ordinality where ordinality <= 43
+  ));
+  perform public.exam_save_definition(d_invalid);
+  if public.exam_admin_definition(t.exam_id)->>'is_published' <> 'true' then
+    raise exception 'Gepubliceerd examen met 43 vragen mislukt';
+  end if;
+  perform public.exam_save_definition(d);
+  d_invalid := jsonb_set(d, '{questions}', d->'questions' || jsonb_build_array(
+    d->'questions'->0, d->'questions'->0, d->'questions'->0, d->'questions'->0, d->'questions'->0,
+    d->'questions'->0, d->'questions'->0
+  ));
+  failed := false;
+  begin perform public.exam_save_definition(d_invalid); exception when others then failed := true; end;
+  if not failed then raise exception 'Examen met meer dan 50 vragen kon worden opgeslagen'; end if;
+  if exists (select 1 from information_schema.columns where table_schema = 'public'
+    and table_name = 'questions' and column_name in ('cbr_category', 'time_limit_seconds')) then
+    raise exception 'Verouderde vraagcategorie of vraag-timer bestaat nog';
+  end if;
   perform set_config('request.jwt.claim.sub', t.unauthorized_id::text, true);
   failed := false;
   begin perform public.exam_attempt_action(t.exam_id, 'start'); exception when others then failed := true; end;
@@ -44,6 +99,9 @@ begin
   if exists(select 1 from public.questions where exam_id = t.exam_id) or exists(select 1 from public.question_options where id = t.o1) then raise exception 'Correcte antwoorden zijn zichtbaar via RLS'; end if;
   a := public.exam_attempt_action(t.exam_id, 'start');
   if a::text ~ '"(is_correct|correct_order|correct_number|explanation)"' then raise exception 'Antwoorden lekken in actieve poging'; end if;
+  if a::text ~ '"(cbr_category|time_limit_seconds)"' then
+    raise exception 'Verouderde vraagcategorie of vraag-timer lekt naar leerlingvraag';
+  end if;
   if (public.exam_attempt_action(t.exam_id, 'start')->>'id') <> a->>'id' then raise exception 'Hervatten mislukt'; end if;
   if exists(select 1 from public.exam_attempt_snapshots where attempt_id = (a->>'id')::uuid) then raise exception 'Momentopname zichtbaar'; end if;
   answer := jsonb_build_object(t.q1::text, t.o1::text, t.q2::text, '50,0', t.q3::text,
@@ -62,8 +120,8 @@ begin
   if not failed then raise exception 'Poging van andere leerling toegankelijk'; end if;
   perform set_config('request.jwt.claim.sub', t.student_id::text, true);
   b := public.exam_attempt_action(t.exam_id, 'submit', (a->>'id')::uuid, answer, jsonb_build_array(t.q1), 1);
-  if b->>'status' <> 'completed' or (b->>'score')::int <> 3 then raise exception 'Beoordeling of momentopname mislukt: %', b; end if;
-  if jsonb_array_length(b->'result') <> 3 then raise exception 'Resultaat ontbreekt'; end if;
+  if b->>'status' <> 'completed' or (b->>'score')::int <> 3 or (b->>'passing_score')::int <> 39 then raise exception 'Beoordeling of momentopname mislukt: %', b; end if;
+  if jsonb_array_length(b->'result') <> 44 then raise exception 'Resultaat ontbreekt'; end if;
   a := public.exam_attempt_action(t.exam_id, 'start');
   perform public.exam_attempt_action(t.exam_id, 'save', (a->>'id')::uuid, jsonb_build_object(t.q1::text, t.o1::text), '[]', 0);
 end;
@@ -95,3 +153,4 @@ begin
 end;
 $$;
 reset role;
+rollback;
