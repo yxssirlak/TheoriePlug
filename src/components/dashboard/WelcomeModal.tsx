@@ -10,7 +10,7 @@ export default function WelcomeModal({
   onComplete,
 }: {
   userId: string;
-  onComplete: (newName: string) => void;
+  onComplete: (newName: string, examDate: string | null) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
@@ -62,7 +62,7 @@ export default function WelcomeModal({
 
       // 3. Sluit modal en stuur de naam terug
       setIsOpen(false);
-      onComplete(name.trim());
+      onComplete(name.trim(), examDate || null);
     } catch (error) {
       console.error("Fout bij opslaan gegevens:", error);
       setSaveError(error instanceof Error ? error.message : "Opslaan is mislukt. Probeer het opnieuw.");

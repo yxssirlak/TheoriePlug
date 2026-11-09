@@ -5,9 +5,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUser } from "../../../components/dashboard/user-context";
 import AuthenticatedPage from "../../../components/dashboard/AuthenticatedPage";
-import { createClient } from "../../../lib/supabase"; // Zorg dat dit pad klopt!
-import { Skeleton } from "../../../components/ui/PageSkeleton";
-import Notification from "../../../components/ui/Notification";
 
 const QUICK_ACTIONS = [
   { href: "/oefenexamens", sticker: "oefenexamens", title: "Oefenexamen starten", text: "Doe een examen zoals bij het CBR.", accent: true },
@@ -31,6 +28,18 @@ function greeting(): string {
   return "Goedenavond";
 }
 
+function getDaysUntilExam(examDate: string | null): number | null {
+  if (!examDate) return null;
+
+  const exam = new Date(examDate);
+  if (Number.isNaN(exam.getTime())) return null;
+  exam.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.ceil((exam.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
 export default function DashboardPage() {
   return <AuthenticatedPage><DashboardContent /></AuthenticatedPage>;
 }
@@ -39,9 +48,7 @@ function DashboardContent() {
   const user = useUser();
   const tip = TIPS[new Date().getDate() % TIPS.length];
   const [success, setSuccess] = useState(false);
-  const [daysLeft, setDaysLeft] = useState<number | null>(null);
-  const [dateLoading, setDateLoading] = useState(true);
-  const [dateError, setDateError] = useState<string | null>(null);
+  const daysLeft = getDaysUntilExam(user.examDate);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("success") === "true") {
@@ -50,40 +57,6 @@ function DashboardContent() {
     }
   }, []);
 
-  // Haal de datum op en bereken de resterende dagen
-  useEffect(() => {
-    let active = true;
-    const fetchExamDate = async () => {
-      const supabase = createClient();
-      const { data: { user: authUser }, error } = await supabase.auth.getUser();
-      if (!active) return;
-      if (error || !authUser) {
-        setDateError(error?.message ?? "Geen actieve gebruiker gevonden.");
-        setDateLoading(false);
-        return;
-      }
-      const examDate = authUser?.user_metadata?.exam_date;
-
-      if (examDate) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Zet tijd op 00:00 voor accurate dag-berekening
-        
-        const exam = new Date(examDate);
-        exam.setHours(0, 0, 0, 0);
-
-        const diffTime = exam.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        // Zorg dat hij niet in de min gaat als de datum al voorbij is
-        setDaysLeft(diffDays > 0 ? diffDays : 0);
-      }
-      setDateLoading(false);
-    };
-    fetchExamDate();
-    return () => { active = false; };
-  }, []);
-
-  // STATS staat nu binnen de component zodat daysLeft dynamisch ingeladen kan worden
   const STATS = [
     { id: "score", label: "Gemiddelde score", value: 0, max: 100, type: "ring", color: "lime" },
     { id: "exams", label: "Oefenexamens", value: 0, max: 15, type: "bar", color: "jade" },
@@ -93,7 +66,6 @@ function DashboardContent() {
 
   return (
     <div className="space-y-8">
-      {dateError && <Notification>Examendatum laden mislukt: {dateError}</Notification>}
       {success && (
         <div role="status" className="fixed bottom-4 right-4 z-[90] flex w-[calc(100%-2rem)] max-w-sm items-start justify-between gap-4 rounded-2xl border border-lime/40 bg-[#0a1f1a]/95 px-5 py-4 shadow-2xl backdrop-blur-xl sm:bottom-6 sm:right-6">
           <p className="font-semibold text-lime">
@@ -193,9 +165,7 @@ function DashboardContent() {
               {/* VISUAL 3: Countdown Kalender */}
               {stat.type === "countdown" && (
                 <div className="mt-auto flex items-center gap-4">
-                  {dateLoading ? <span role="status" aria-label="Examendatum laden"><Skeleton className="h-16 w-40" /></span> : dateError ? (
-                    <p className="text-sm text-paper/60">Examendatum niet beschikbaar.</p>
-                  ) : hasValue ? (
+                  {hasValue ? (
                     <>
                       <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-jade text-ink shadow-[0_0_20px_rgba(16,185,129,0.4)]">
                         <span className="font-display text-3xl font-black">{stat.value}</span>

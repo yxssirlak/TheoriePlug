@@ -59,7 +59,12 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       const { data: profile, error: profileError } = await supabase.from("profiles").select("first_name").eq("id", data.user.id).maybeSingle();
       if (profileError) console.error("Profiel laden mislukt:", profileError.message);
       if (cancelled) return;
-      setUser({ id: data.user.id, email, name: profile?.first_name?.trim().split(" ")[0] || displayName(data.user.user_metadata, email) });
+      setUser({
+        id: data.user.id,
+        email,
+        name: profile?.first_name?.trim().split(" ")[0] || displayName(data.user.user_metadata, email),
+        examDate: typeof data.user.user_metadata?.exam_date === "string" ? data.user.user_metadata.exam_date : null,
+      });
       loadPackageTier(supabase, data.user.id)
         .then((found) => !cancelled && setTier(found))
         .catch(() => undefined);
@@ -112,7 +117,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       {/* De nieuwe Onboarding Modal */}
       <WelcomeModal 
         userId={user.id} 
-        onComplete={(newName) => setUser({ ...user, name: newName })} 
+        onComplete={(newName, examDate) => setUser({ ...user, name: newName, examDate })}
       />
       <div className="min-h-screen bg-background text-paper lg:flex">
         {/* SIDEBAR (desktop) */}
