@@ -32,6 +32,12 @@ export type SheetPage = {
 };
 
 export const SHEET_BUCKET = "cheat-sheet-media";
+export const LAST_EDITED_SHEET_KEY = "theorieplug:last-edited-cheat-sheet";
+
+export function lastEditedSheet<T extends { id: string; created_at: string }>(pages: T[], lastEditedId: string | null): T | null {
+  return pages.find((page) => page.id === lastEditedId)
+    ?? pages.reduce<T | null>((latest, page) => !latest || page.created_at > latest.created_at ? page : latest, null);
+}
 
 export function newBlock(type: SheetBlockType): SheetBlock {
   return {

@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { assignBlockColumns, blocksByColumn, legacySheetRows, moveBlock, moveBlockToColumn, moveSheetBlock, newBlock, removeLastBlockColumn, setSheetRowColumns, sheetBlockSections } from "../src/lib/cheat-sheet.ts";
+import { assignBlockColumns, blocksByColumn, lastEditedSheet, legacySheetRows, moveBlock, moveBlockToColumn, moveSheetBlock, newBlock, removeLastBlockColumn, setSheetRowColumns, sheetBlockSections } from "../src/lib/cheat-sheet.ts";
+
+test("selecteert de laatst bewerkte pagina en valt terug op de nieuwste bestaande pagina", () => {
+  const pages = [{ id: "oud", created_at: "2026-01-01T00:00:00Z" }, { id: "nieuw", created_at: "2026-02-01T00:00:00Z" }];
+  assert.equal(lastEditedSheet(pages, "oud")?.id, "oud");
+  assert.equal(lastEditedSheet(pages, "verwijderd")?.id, "nieuw");
+  assert.equal(lastEditedSheet(pages, null)?.id, "nieuw");
+  assert.equal(lastEditedSheet([], "oud"), null);
+});
 
 test("blokken kunnen in beide richtingen worden verplaatst zonder de originele lijst te wijzigen", () => {
   const blocks = [newBlock("text"), newBlock("image"), newBlock("reveal")];
