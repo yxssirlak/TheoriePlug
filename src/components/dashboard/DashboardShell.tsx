@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useTransition, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -38,20 +38,41 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<PlatformUser | null>(null);
-  const [tier, setTier] = useState<PackageTier | null>(null);
+  const [tier, setTier] = useState<PackageTier | null>(() => {
+    // Init tier van cache
+    try {
+      const cached = sessionStorage.getItem("_platformTier");
+      return cached === "null" ? null : (cached as PackageTier) || null;
+    } catch {
+      return null;
+    }
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [collapsed, toggleCollapsed] = useSidebarPreference();
   const [hovered, setHovered] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const expanded = !collapsed || hovered;
 
   useEffect(() => {
     const supabase = createClient();
     let cancelled = false;
 
+    // Zet user data in session storage om navigatie sneller te maken
+    const cachedUser = sessionStorage.getItem("_platformUser");
+    if (cachedUser) {
+      try {
+        const parsed = JSON.parse(cachedUser) as PlatformUser;
+        setUser(parsed);
+      } catch {
+        sessionStorage.removeItem("_platformUser");
+      }
+    }
+
     supabase.auth.getUser().then(async ({ data }) => {
       if (cancelled) return;
       if (!data.user) {
+        sessionStorage.removeItem("_platformUser");
         router.replace("/login");
         return;
       }
@@ -59,14 +80,25 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       const { data: profile, error: profileError } = await supabase.from("profiles").select("first_name").eq("id", data.user.id).maybeSingle();
       if (profileError) console.error("Profiel laden mislukt:", profileError.message);
       if (cancelled) return;
-      setUser({ id: data.user.id, email, name: profile?.first_name?.trim().split(" ")[0] || displayName(data.user.user_metadata, email) });
+      const userData = { id: data.user.id, email, name: profile?.first_name?.trim().split(" ")[0] || displayName(data.user.user_metadata, email) };
+      sessionStorage.setItem("_platformUser", JSON.stringify(userData));
+      setUser(userData);
       loadPackageTier(supabase, data.user.id)
-        .then((found) => !cancelled && setTier(found))
+        .then((found) => {
+          if (!cancelled) {
+            setTier(found);
+            sessionStorage.setItem("_platformTier", found || "null");
+          }
+        })
         .catch(() => undefined);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) router.replace("/login");
+      if (!session) {
+        sessionStorage.removeItem("_platformUser");
+        sessionStorage.removeItem("_platformTier");
+        router.replace("/login");
+      }
     });
 
     return () => {
@@ -205,6 +237,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={true}
                     title={expanded ? undefined : item.label}
                     aria-label={item.label}
                     aria-current={active ? "page" : undefined}

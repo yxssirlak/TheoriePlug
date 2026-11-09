@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "../../lib/supabase";
 import { loadCourseTree, loadPackageTier } from "../../lib/course/data";
@@ -19,7 +19,7 @@ type State =
   | { status: "error"; message: string }
   | { status: "ready"; tree: TopicNode[]; tier: PackageTier | null };
 
-export default function VideoCourse() {
+function VideoCourse() {
   const user = useUser();
   const [supabase] = useState(() => createClient());
   const [state, setState] = useState<State>({ status: "loading" });
@@ -33,11 +33,12 @@ export default function VideoCourse() {
     let cancelled = false;
     (async () => {
       try {
-        const [tree, tier, progress, masteryRows] = await Promise.all([
+        const { loadCourseTree, loadPackageTier } = await import("../../lib/course/data");
+        // Laad eerst kritieke data: tree en tier
+        const [tree, tier, progress] = await Promise.all([
           loadCourseTree(supabase),
           loadPackageTier(supabase, user.id),
           supabase.from("user_progress").select("lesson_id").eq("user_id", user.id),
-          supabase.from("user_mastery").select("*").eq("user_id", user.id),
         ]);
         if (cancelled) return;
 
@@ -48,10 +49,17 @@ export default function VideoCourse() {
         const linkedLesson = tree.flatMap((t) => t.subtopics.flatMap((s) => s.lessons)).find((l) => l.id === requestedLesson);
 
         setCompleted(done);
-        setMastery((masteryRows.data ?? []).map(toMastery));
         setSelectedId((linkedLesson ?? firstOpen ?? firstAny)?.id ?? null);
         setLessonLinkError(Boolean(requestedLesson && !linkedLesson));
         setState({ status: "ready", tree, tier });
+
+        // Laad mastery data lazy (niet-blocking)
+        if (!cancelled) {
+          supabase.from("user_mastery").select("*").eq("user_id", user.id)
+            .then(({ data }) => {
+              if (!cancelled) setMastery((data ?? []).map(toMastery));
+            });
+        }
       } catch (error) {
         if (!cancelled) setState({ status: "error", message: error instanceof Error ? error.message : "Onbekende fout" });
       }
@@ -182,3 +190,5 @@ export default function VideoCourse() {
     </div>
   );
 }
+
+export default memo(VideoCourse);

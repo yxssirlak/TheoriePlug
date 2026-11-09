@@ -24,7 +24,7 @@ export default function ExamSimulator() {
   const [marks, setMarks] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [overview, setOverview] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [examsLoaded, setExamsLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [unsaved, setUnsaved] = useState(false);
@@ -40,16 +40,12 @@ export default function ExamSimulator() {
   const offset = useRef(0);
   const { confirm, element } = useDialogs();
 
-  const load = useCallback(async () => {
-    try { setExams(await listStudentExams()); }
-    catch (e) { setError(errorText(e)); }
-    finally { setLoading(false); }
-  }, []);
   useEffect(() => {
     let active = true;
-    listStudentExams().then((items) => { if (active) setExams(items); })
+    listStudentExams()
+      .then((items) => { if (active) setExams(items); })
       .catch((e: unknown) => { if (active) setError(errorText(e)); })
-      .finally(() => { if (active) setLoading(false); });
+      .finally(() => { if (active) setExamsLoaded(true); });
     return () => { active = false; };
   }, []);
   function applyAttempt(value: Attempt) {
@@ -136,14 +132,56 @@ export default function ExamSimulator() {
     setBusy(false);
   }
   async function backToExams() {
-    setAttempt(null); current.current = null; setSelected(null); setLoading(true);
-    await load();
+    setAttempt(null);
+    current.current = null;
+    setSelected(null);
   }
-  if (loading) return <><PageHeader title="Oefenexamens" text="Oefen met een examensimulatie." /><PageSkeleton kind="exam" header={false} /></>;
+  if (error && !selected && !attempt) {
+    return (
+      <>
+        <PageHeader title="Oefenexamens" text="Oefen met een examensimulatie." />
+        <Notification onDismiss={() => setError(null)}>{error}</Notification>
+        {!examsLoaded && <PageSkeleton kind="exam" header={false} />}
+      </>
+    );
+  }
+
   const notification = error && <Notification onDismiss={() => setError(null)}>{error}</Notification>;
-  if (!selected) return <>{notification}<PageHeader title="Oefenexamens" text="Oefen met een examensimulatie." />
-    {exams.length === 0 ? <p className="rounded-2xl bg-surface p-6 text-paper/70">Er zijn nog geen examens beschikbaar voor jouw pakket.</p> : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{exams.map((exam) => <button key={exam.id} className="rounded-3xl border border-white/10 bg-surface p-6 text-left hover:border-lime" onClick={() => setSelected(exam)}><h2 className="text-xl font-bold">{exam.title}</h2><p className="mt-2 text-paper/60">{exam.description}</p><p className="mt-4 text-sm">{exam.time_limit_minutes} minuten · {exam.question_count} vragen</p><p className="mt-2 text-lime">{exam.active_attempt ? "Poging hervatten" : exam.best_score !== null ? `Hoogste score: ${exam.best_score} goed` : "Nog niet gemaakt"}</p></button>)}</div>}
-  </>;
+
+  if (!selected) {
+    return (
+      <>
+        {notification}
+        <PageHeader title="Oefenexamens" text="Oefen met een examensimulatie." />
+        {!examsLoaded ? (
+          <PageSkeleton kind="exam" header={false} />
+        ) : exams.length === 0 ? (
+          <p className="rounded-2xl bg-surface p-6 text-paper/70">Er zijn nog geen examens beschikbaar voor jouw pakket.</p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {exams.map((exam) => (
+              <button
+                key={exam.id}
+                className="rounded-3xl border border-white/10 bg-surface p-6 text-left hover:border-lime"
+                onClick={() => setSelected(exam)}
+              >
+                <h2 className="text-xl font-bold">{exam.title}</h2>
+                <p className="mt-2 text-paper/60">{exam.description}</p>
+                <p className="mt-4 text-sm">{exam.time_limit_minutes} minuten · {exam.question_count} vragen</p>
+                <p className="mt-2 text-lime">
+                  {exam.active_attempt
+                    ? "Poging hervatten"
+                    : exam.best_score !== null
+                      ? `Hoogste score: ${exam.best_score} goed`
+                      : "Nog niet gemaakt"}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  }
   if (!attempt) return <>{notification}<div className="max-w-2xl rounded-3xl border border-lime/30 bg-surface p-6"><button className={button} onClick={() => setSelected(null)}>← Alle examens</button><h1 className="mt-6 text-3xl font-bold">{selected.title}</h1><p className="mt-3 text-paper/70">{selected.description}</p><ul className="mt-5 list-disc space-y-2 pl-5 text-paper/80"><li>{selected.question_count} vragen, {selected.time_limit_minutes} minuten.</li><li>Je hebt minimaal {selected.passing_score} goede antwoorden nodig.</li><li>Je kunt vragen markeren en terugkijken. De tijd loopt door als je de pagina verlaat.</li><li>Bij tijd verstreken wordt het laatst opgeslagen antwoord ingeleverd.</li></ul><button className={`${primary} mt-6`} disabled={busy} onClick={() => void begin(selected)}>{busy ? "Bezig..." : selected.active_attempt ? "Poging hervatten" : "Start examen"}</button></div></>;
   if (attempt.status === "completed") return <>{notification}<div className="max-w-3xl space-y-5 rounded-3xl border border-white/10 bg-surface p-6"><h1 className={`text-3xl font-bold ${(attempt.score ?? 0) >= attempt.passing_score ? "text-lime" : "text-red-400"}`}>{(attempt.score ?? 0) >= attempt.passing_score ? "Geslaagd" : "Gezakt"}</h1><p>{attempt.score} van {attempt.question_count} goed · Slaaggrens: {attempt.passing_score}</p><div className="space-y-3">{attempt.result?.map((result, i) => <div key={result.question_id} className="rounded-xl bg-white/5 p-4"><strong className={result.correct ? "text-lime" : "text-red-400"}>{i + 1}. {result.correct ? "Goed" : "Fout"}</strong><p>{result.question_text}</p>{result.explanation && <p className="mt-2 text-sm text-paper/70">{result.explanation}</p>}</div>)}</div><button className={primary} onClick={() => void backToExams()}>Terug naar examens</button></div></>;
   const q = attempt.questions[index];

@@ -201,6 +201,15 @@ body {
   .animate-marquee {
     animation: marquee 200s linear infinite;
   }
+  
+  /* Instant button/link interaction feedback */
+  button, a, [role="button"], [role="link"] {
+    transition: all 0.15s ease-out;
+  }
+  
+  button:active, a:active, [role="button"]:active, [role="link"]:active {
+    transform: scale(0.98);
+  }
 }
 
 @keyframes marquee {

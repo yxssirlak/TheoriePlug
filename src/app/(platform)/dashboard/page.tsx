@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUser } from "../../../components/dashboard/user-context";
@@ -42,6 +41,16 @@ function DashboardContent() {
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [dateLoading, setDateLoading] = useState(true);
   const [dateError, setDateError] = useState<string | null>(null);
+  
+  // Video cursus state
+  const [videoData, setVideoData] = useState<{
+    topicTitle: string;
+    lessonTitle: string;
+    percentage: number;
+    lessonId: string;
+  } | null>(null);
+  const [videoLoading, setVideoLoading] = useState(true);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("success") === "true") {
@@ -66,7 +75,7 @@ function DashboardContent() {
 
       if (examDate) {
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Zet tijd op 00:00 voor accurate dag-berekening
+        today.setHours(0, 0, 0, 0);
         
         const exam = new Date(examDate);
         exam.setHours(0, 0, 0, 0);
@@ -74,7 +83,6 @@ function DashboardContent() {
         const diffTime = exam.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
-        // Zorg dat hij niet in de min gaat als de datum al voorbij is
         setDaysLeft(diffDays > 0 ? diffDays : 0);
       }
       setDateLoading(false);
@@ -83,11 +91,150 @@ function DashboardContent() {
     return () => { active = false; };
   }, []);
 
-  // STATS staat nu binnen de component zodat daysLeft dynamisch ingeladen kan worden
+  // Haal videocursus data op
+  useEffect(() => {
+    let active = true;
+    const fetchVideoData = async () => {
+      try {
+        const supabase = createClient();
+        
+        // Importeer de functies die we nodig hebben
+        const { loadCourseTree } = await import("../../../lib/course/data");
+        
+        // Laad de cursus boom
+        const tree = await loadCourseTree(supabase);
+        
+        // Vind "Gevarenherkenning" topic (eerste topic naar verwachting)
+        const gevarenTopic = tree[0];
+        if (!gevarenTopic) {
+          if (active) setVideoLoading(false);
+          return;
+        }
+
+        // Haal voortgang op
+        const { data: progressData } = await supabase
+          .from("user_progress")
+          .select("lesson_id")
+          .eq("user_id", user.id);
+
+        const completed = new Set<string>((progressData ?? []).map((row) => row.lesson_id));
+
+        // Bereken percentage voor deze topic
+        const allLessons = gevarenTopic.subtopics.flatMap((s) => s.lessons);
+        const completedCount = allLessons.filter((l) => completed.has(l.id)).length;
+        const percentage = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
+
+        // Vind de eerste onafgeronde les of de eerste les
+        const firstUnfinished = allLessons.find((l) => !completed.has(l.id)) ?? allLessons[0];
+        
+        // Vind welke subtopic deze les bevat
+        const subtopic = gevarenTopic.subtopics.find((s) =>
+          s.lessons.some((l) => l.id === firstUnfinished?.id)
+        );
+
+        if (active && firstUnfinished && subtopic) {
+          setVideoData({
+            topicTitle: gevarenTopic.title,
+            lessonTitle: firstUnfinished.title,
+            percentage,
+            lessonId: firstUnfinished.id,
+          });
+        }
+      } catch (error) {
+        if (active) {
+          setVideoError(error instanceof Error ? error.message : "Error loading video data");
+        }
+      } finally {
+        if (active) setVideoLoading(false);
+      }
+    };
+
+    fetchVideoData();
+    return () => { active = false; };
+  }, [user.id]);
+
+  // Haal statistieken op (examens, vragen)
+  const [stats, setStats] = useState<{
+    examCount: number;
+    examAvailable: number;
+    questionCount: number;
+    averageScore: number;
+  }>({
+    examCount: 0,
+    examAvailable: 0,
+    questionCount: 0,
+    averageScore: 0,
+  });
+
+  useEffect(() => {
+    let active = true;
+    const fetchStats = async () => {
+      try {
+        const supabase = createClient();
+        const { loadPackageTier } = await import("../../../lib/course/data");
+        
+        // Haal het pakket op
+        const tier = await loadPackageTier(supabase, user.id);
+        if (!tier) {
+          if (active) setStats(prev => ({ ...prev, examAvailable: 0 }));
+          return;
+        }
+
+        // Haal beschikbare examens op (gepubliceerd en in dit pakket)
+        const { data: availableExams, error: availableError } = await supabase
+          .from("exams")
+          .select("id")
+          .eq("is_published", true)
+          .contains("allowed_packages", [tier]);
+        
+        if (availableError) throw availableError;
+        const examAvailable = availableExams?.length ?? 0;
+
+        // Haal aantal UNIEKE examens op die afgerond zijn (niet per poging)
+        const { data: examData, error: examError } = await supabase
+          .from("exam_attempts")
+          .select("exam_id, score")
+          .eq("user_id", user.id)
+          .eq("status", "completed");
+        
+        if (examError) throw examError;
+
+        // Tel unieke exam IDs
+        const uniqueExams = new Set(examData?.map(e => e.exam_id) ?? []);
+        const examCount = uniqueExams.size;
+
+        // Bereken gemiddelde score en totaal correct
+        let averageScore = 0;
+        let totalCorrect = 0;
+
+        if (examData && examData.length > 0) {
+          const scores = examData.map((row) => row.score ?? 0);
+          averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+          totalCorrect = scores.reduce((a, b) => a + b, 0);
+        }
+
+        if (active) {
+          setStats({
+            examCount,
+            examAvailable,
+            questionCount: totalCorrect,
+            averageScore,
+          });
+        }
+      } catch (error) {
+        console.error("Error loading stats:", error);
+      }
+    };
+
+    fetchStats();
+    return () => { active = false; };
+  }, [user.id]);
+
+  // STATS met dynamische waarden
   const STATS = [
-    { id: "score", label: "Gemiddelde score", value: 0, max: 100, type: "ring", color: "lime" },
-    { id: "exams", label: "Oefenexamens", value: 0, max: 15, type: "bar", color: "jade" },
-    { id: "questions", label: "Vragen geoefend", value: 0, max: 500, type: "bar", color: "lime" },
+    { id: "score", label: "Gemiddelde score", value: stats.averageScore, max: 100, type: "ring", color: "lime" },
+    { id: "exams", label: "Oefenexamens", value: stats.examCount, max: stats.examAvailable || 1, type: "bar", color: "jade" },
+    { id: "questions", label: "Vragen geoefend", value: stats.questionCount, max: null, type: "bar", color: "lime" },
     { id: "days", label: "Dagen tot examen", value: daysLeft, max: null, type: "countdown", color: "jade" },
   ];
 
@@ -177,16 +324,18 @@ function DashboardContent() {
                     <p className={`font-display text-3xl font-black drop-shadow-md ${stat.color === 'lime' ? 'text-lime' : 'text-jade'}`}>
                       {hasValue ? stat.value : '0'}
                     </p>
-                    <p className="mb-1 text-xs font-bold text-paper/40">/ {stat.max}</p>
+                    {stat.max !== null && <p className="mb-1 text-xs font-bold text-paper/40">/ {stat.max}</p>}
                   </div>
-                  <div className="h-2.5 w-full rounded-full bg-paper/10">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                        stat.color === 'lime' ? 'bg-lime shadow-[0_0_12px_rgba(204,255,0,0.8)]' : 'bg-jade shadow-[0_0_12px_rgba(16,185,129,0.8)]'
-                      }`} 
-                      style={{ width: `${percent}%` }} 
-                    />
-                  </div>
+                  {stat.max !== null && (
+                    <div className="h-2.5 w-full rounded-full bg-paper/10">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                          stat.color === 'lime' ? 'bg-lime' : 'bg-jade'
+                        }`} 
+                        style={{ width: `${percent}%` }} 
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -227,61 +376,66 @@ function DashboardContent() {
       
       {/* LAATSTE ACTIVITEIT / HERVATTEN */}
       <section>
-        <div className="group relative flex flex-col justify-between gap-5 overflow-hidden rounded-3xl border border-white/10 bg-surface p-5 transition-all hover:border-lime/50 hover:shadow-[0_0_30px_rgba(204,255,0,0.15)] sm:flex-row sm:items-center sm:p-6 lg:p-8">
-          
-          {/* Achtergrond glow (zichtbaar bij hover) */}
-          <div className="absolute -right-20 -top-20 z-0 h-40 w-40 rounded-full bg-lime/20 opacity-0 blur-3xl transition-opacity duration-700 group-hover:opacity-100" />
-
-          <div className="relative z-10 flex items-center gap-4 sm:gap-6">
+        {videoLoading ? (
+          <div className="rounded-3xl border border-white/10 bg-surface p-6">
+            <Skeleton className="h-32 w-full" />
+          </div>
+        ) : videoError || !videoData ? (
+          <div className="rounded-3xl border border-white/10 bg-surface p-6 text-center text-paper/60">
+            Videocursus data kon niet worden geladen
+          </div>
+        ) : (
+          <div className="group relative flex flex-col justify-between gap-5 overflow-hidden rounded-3xl border border-white/10 bg-surface p-5 transition-all hover:border-lime/50 hover:shadow-[0_0_30px_rgba(204,255,0,0.15)] sm:flex-row sm:items-center sm:p-6 lg:p-8">
             
-            {/* Progress Ring met GROTE Play Sticker */}
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#18181B] shadow-inner sm:h-20 sm:w-20">
-              
-              {/* De geanimeerde Lime ring */}
-              <svg className="absolute inset-0 h-full w-full -rotate-90 transform" viewBox="0 0 36 36">
-                <path className="text-paper/10" strokeWidth="2.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path 
-                  className="text-lime transition-all duration-1000 ease-out" 
-                  strokeWidth="2.5" 
-                  strokeDasharray="65, 100" 
-                  strokeLinecap="round" 
-                  stroke="currentColor" 
-                  fill="none" 
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                  style={{ filter: "drop-shadow(0 0 4px rgba(204,255,0,0.5))" }}
-                />
-              </svg>
+            {/* Achtergrond glow (zichtbaar bij hover) */}
+            <div className="absolute -right-20 -top-20 z-0 h-40 w-40 rounded-full bg-lime/20 opacity-0 blur-3xl transition-opacity duration-700 group-hover:opacity-100" />
 
-              {/* De grote sticker (zonder de oude SVG!) */}
-              <div className="relative z-10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                <Image
-                  src="/brand/png/svg/sticker-afspelen.svg"
-                  alt="Afspelen"
-                  width={64}
-                  height={64}
-                  className="h-10 w-10 drop-shadow-xl sm:h-12 sm:w-12 lg:h-14 lg:w-14"
-                />
+            <div className="relative z-10 flex items-center gap-4 sm:gap-6">
+              
+              {/* Progress Circle - dynamisch percentage */}
+              <div className="relative flex h-24 w-24 shrink-0 items-center justify-center sm:h-28 sm:w-28 lg:h-32 lg:w-32">
+                <svg className="absolute inset-0 h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
+                  {/* Background circle */}
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="3" className="text-paper/10" />
+                  {/* Progress circle - dynamic */}
+                  <circle 
+                    cx="50" 
+                    cy="50" 
+                    r="45" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="3" 
+                    strokeDasharray={`${(videoData.percentage / 100) * 282.74} 282.74`}
+                    strokeLinecap="round" 
+                    className="text-lime transition-all duration-1000"
+                  />
+                </svg>
+                
+                {/* Percentage text in center */}
+                <div className="relative z-10 flex flex-col items-center justify-center">
+                  <span className="font-display text-2xl font-black text-lime sm:text-3xl lg:text-4xl">{videoData.percentage}<span className="text-base sm:text-lg lg:text-xl">%</span></span>
+                </div>
+              </div>
+
+              {/* Tekst Content - dynamisch */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-lime sm:text-xs">Ga verder waar je bleef</p>
+                <h3 className="mt-1 font-display text-xl font-black text-white drop-shadow-sm sm:text-2xl">Videocursus: {videoData.topicTitle}</h3>
+                <p className="mt-1 text-xs font-semibold text-paper/60 sm:text-sm">{videoData.lessonTitle} &bull; {videoData.percentage}% voltooid</p>
               </div>
             </div>
 
-            {/* Tekst Content */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-lime sm:text-xs">Ga verder waar je bleef</p>
-              <h3 className="mt-1 font-display text-xl font-black text-white drop-shadow-sm sm:text-2xl">Videocursus: Gevarenherkenning</h3>
-              <p className="mt-1 text-xs font-semibold text-paper/60 sm:text-sm">Les 4: Snelheid en remafstand &bull; 65% voltooid</p>
+            {/* Actieknop */}
+            <div className="relative z-10 shrink-0">
+              <Link href={`/videocursus?les=${videoData.lessonId}`} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime px-6 py-3.5 font-display text-sm font-extrabold uppercase tracking-widest text-ink transition-transform hover:scale-[1.03] active:scale-95 sm:w-auto">
+                Hervatten
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="h-4 w-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
             </div>
           </div>
-
-          {/* Actieknop */}
-          <div className="relative z-10 shrink-0">
-            <Link href="/videocursus" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime px-6 py-3.5 font-display text-sm font-extrabold uppercase tracking-widest text-ink transition-transform hover:scale-[1.03] active:scale-95 sm:w-auto">
-              Hervatten
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
-          </div>
-        </div>
+        )}
       </section>
 
       <section>
