@@ -60,7 +60,6 @@ function SettingsContent() {
         .from("profiles")
         .update({
           first_name: name.trim(),
-          exam_date: examDate || null,
         })
         .eq("id", user.id);
       if (profileError) throw new Error(`Accountgegevens zijn bijgewerkt, maar het profiel niet: ${profileError.message}`);
