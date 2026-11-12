@@ -80,7 +80,12 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       const { data: profile, error: profileError } = await supabase.from("profiles").select("first_name").eq("id", data.user.id).maybeSingle();
       if (profileError) console.error("Profiel laden mislukt:", profileError.message);
       if (cancelled) return;
-      setUser({ id: data.user.id, email, name: profile?.first_name?.trim().split(" ")[0] || displayName(data.user.user_metadata, email) });
+      setUser({ 
+  id: data.user.id, 
+  email, 
+  name: profile?.first_name?.trim().split(" ")[0] || displayName(data.user.user_metadata, email),
+  examDate: data.user.user_metadata?.exam_date || null
+});
       loadPackageTier(supabase, data.user.id)
         .then((found) => {
           if (!cancelled) {
