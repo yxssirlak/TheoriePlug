@@ -23,7 +23,7 @@ const archivo = Archivo({
 
 export const metadata: Metadata = {
   title: "TheoriePlug — Plug je kennis. Own de weg.",
-  description: "Oefen autotheorie met CBR-achtige examens en gevaarherkenning.",
+  description: "Oefen autotheorie met complete CBR-achtige examens.",
   icons: {
     icon: "/brand/png/svg/logo-upright-b-limoen-tegel.svg",
   },

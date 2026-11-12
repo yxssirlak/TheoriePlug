@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUser } from "../../../components/dashboard/user-context";
 import AuthenticatedPage from "../../../components/dashboard/AuthenticatedPage";
-import { createClient } from "../../../lib/supabase"; // Zorg dat dit pad klopt!
-import { Skeleton } from "../../../components/ui/PageSkeleton";
 import Notification from "../../../components/ui/Notification";
 
 const QUICK_ACTIONS = [
@@ -30,6 +28,18 @@ function greeting(): string {
   return "Goedenavond";
 }
 
+function getDaysUntilExam(examDate: string | null): number | null {
+  if (!examDate) return null;
+
+  const exam = new Date(examDate);
+  if (Number.isNaN(exam.getTime())) return null;
+  exam.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.ceil((exam.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
 export default function DashboardPage() {
   return <AuthenticatedPage><DashboardContent /></AuthenticatedPage>;
 }
@@ -41,16 +51,6 @@ function DashboardContent() {
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [dateLoading, setDateLoading] = useState(true);
   const [dateError, setDateError] = useState<string | null>(null);
-  
-  // Video cursus state
-  const [videoData, setVideoData] = useState<{
-    topicTitle: string;
-    lessonTitle: string;
-    percentage: number;
-    lessonId: string;
-  } | null>(null);
-  const [videoLoading, setVideoLoading] = useState(true);
-  const [videoError, setVideoError] = useState<string | null>(null);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("success") === "true") {
@@ -75,7 +75,7 @@ function DashboardContent() {
 
       if (examDate) {
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0); // Zet tijd op 00:00 voor accurate dag-berekening
         
         const exam = new Date(examDate);
         exam.setHours(0, 0, 0, 0);
@@ -83,6 +83,7 @@ function DashboardContent() {
         const diffTime = exam.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
+        // Zorg dat hij niet in de min gaat als de datum al voorbij is
         setDaysLeft(diffDays > 0 ? diffDays : 0);
       }
       setDateLoading(false);
@@ -91,146 +92,7 @@ function DashboardContent() {
     return () => { active = false; };
   }, []);
 
-  // Haal videocursus data op
-  useEffect(() => {
-    let active = true;
-    const fetchVideoData = async () => {
-      try {
-        const supabase = createClient();
-        
-        // Importeer de functies die we nodig hebben
-        const { loadCourseTree } = await import("../../../lib/course/data");
-        
-        // Laad de cursus boom
-        const tree = await loadCourseTree(supabase);
-        
-        // Vind "Gevarenherkenning" topic (eerste topic naar verwachting)
-        const gevarenTopic = tree[0];
-        if (!gevarenTopic) {
-          if (active) setVideoLoading(false);
-          return;
-        }
-
-        // Haal voortgang op
-        const { data: progressData } = await supabase
-          .from("user_progress")
-          .select("lesson_id")
-          .eq("user_id", user.id);
-
-        const completed = new Set<string>((progressData ?? []).map((row) => row.lesson_id));
-
-        // Bereken percentage voor deze topic
-        const allLessons = gevarenTopic.subtopics.flatMap((s) => s.lessons);
-        const completedCount = allLessons.filter((l) => completed.has(l.id)).length;
-        const percentage = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
-
-        // Vind de eerste onafgeronde les of de eerste les
-        const firstUnfinished = allLessons.find((l) => !completed.has(l.id)) ?? allLessons[0];
-        
-        // Vind welke subtopic deze les bevat
-        const subtopic = gevarenTopic.subtopics.find((s) =>
-          s.lessons.some((l) => l.id === firstUnfinished?.id)
-        );
-
-        if (active && firstUnfinished && subtopic) {
-          setVideoData({
-            topicTitle: gevarenTopic.title,
-            lessonTitle: firstUnfinished.title,
-            percentage,
-            lessonId: firstUnfinished.id,
-          });
-        }
-      } catch (error) {
-        if (active) {
-          setVideoError(error instanceof Error ? error.message : "Error loading video data");
-        }
-      } finally {
-        if (active) setVideoLoading(false);
-      }
-    };
-
-    fetchVideoData();
-    return () => { active = false; };
-  }, [user.id]);
-
-  // Haal statistieken op (examens, vragen)
-  const [stats, setStats] = useState<{
-    examCount: number;
-    examAvailable: number;
-    questionCount: number;
-    averageScore: number;
-  }>({
-    examCount: 0,
-    examAvailable: 0,
-    questionCount: 0,
-    averageScore: 0,
-  });
-
-  useEffect(() => {
-    let active = true;
-    const fetchStats = async () => {
-      try {
-        const supabase = createClient();
-        const { loadPackageTier } = await import("../../../lib/course/data");
-        
-        // Haal het pakket op
-        const tier = await loadPackageTier(supabase, user.id);
-        if (!tier) {
-          if (active) setStats(prev => ({ ...prev, examAvailable: 0 }));
-          return;
-        }
-
-        // Haal beschikbare examens op (gepubliceerd en in dit pakket)
-        const { data: availableExams, error: availableError } = await supabase
-          .from("exams")
-          .select("id")
-          .eq("is_published", true)
-          .contains("allowed_packages", [tier]);
-        
-        if (availableError) throw availableError;
-        const examAvailable = availableExams?.length ?? 0;
-
-        // Haal aantal UNIEKE examens op die afgerond zijn (niet per poging)
-        const { data: examData, error: examError } = await supabase
-          .from("exam_attempts")
-          .select("exam_id, score")
-          .eq("user_id", user.id)
-          .eq("status", "completed");
-        
-        if (examError) throw examError;
-
-        // Tel unieke exam IDs
-        const uniqueExams = new Set(examData?.map(e => e.exam_id) ?? []);
-        const examCount = uniqueExams.size;
-
-        // Bereken gemiddelde score en totaal correct
-        let averageScore = 0;
-        let totalCorrect = 0;
-
-        if (examData && examData.length > 0) {
-          const scores = examData.map((row) => row.score ?? 0);
-          averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-          totalCorrect = scores.reduce((a, b) => a + b, 0);
-        }
-
-        if (active) {
-          setStats({
-            examCount,
-            examAvailable,
-            questionCount: totalCorrect,
-            averageScore,
-          });
-        }
-      } catch (error) {
-        console.error("Error loading stats:", error);
-      }
-    };
-
-    fetchStats();
-    return () => { active = false; };
-  }, [user.id]);
-
-  // STATS met dynamische waarden
+  // STATS staat nu binnen de component zodat daysLeft dynamisch ingeladen kan worden
   const STATS = [
     { id: "score", label: "Gemiddelde score", value: stats.averageScore, max: 100, type: "ring", color: "lime" },
     { id: "exams", label: "Oefenexamens", value: stats.examCount, max: stats.examAvailable || 1, type: "bar", color: "jade" },
@@ -240,16 +102,10 @@ function DashboardContent() {
 
   return (
     <div className="space-y-8">
-      {dateError && <Notification>Examendatum laden mislukt: {dateError}</Notification>}
       {success && (
-        <div role="status" className="fixed bottom-4 right-4 z-[90] flex w-[calc(100%-2rem)] max-w-sm items-start justify-between gap-4 rounded-2xl border border-lime/40 bg-[#0a1f1a]/95 px-5 py-4 shadow-2xl backdrop-blur-xl sm:bottom-6 sm:right-6">
-          <p className="font-semibold text-lime">
-            Betaling gelukt! Je pakket is actief. Veel succes met oefenen!
-          </p>
-          <button type="button" onClick={() => setSuccess(false)} aria-label="Sluiten" className="text-paper/60 transition-colors hover:text-paper">
-            ✕
-          </button>
-        </div>
+        <Notification type="success" onDismiss={() => setSuccess(false)}>
+          Betaling gelukt! Je pakket is actief. Veel succes met oefenen!
+        </Notification>
       )}
       <section>
         <p className="text-paper/60">{greeting()},</p>
@@ -342,9 +198,7 @@ function DashboardContent() {
               {/* VISUAL 3: Countdown Kalender */}
               {stat.type === "countdown" && (
                 <div className="mt-auto flex items-center gap-4">
-                  {dateLoading ? <span role="status" aria-label="Examendatum laden"><Skeleton className="h-16 w-40" /></span> : dateError ? (
-                    <p className="text-sm text-paper/60">Examendatum niet beschikbaar.</p>
-                  ) : hasValue ? (
+                  {hasValue ? (
                     <>
                       <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-jade text-ink shadow-[0_0_20px_rgba(16,185,129,0.4)]">
                         <span className="font-display text-3xl font-black">{stat.value}</span>

@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "../../../../lib/supabase";
 import { loadCourseTree } from "../../../../lib/course/data";
 import type { TopicNode } from "../../../../lib/course/types";
 import LessonEditor, { Field, inputClass, primaryButton } from "../../../../components/admin/LessonEditor";
 import { useDialogs } from "../../../../components/admin/Dialog";
 import { SkeletonList } from "../../../../components/ui/PageSkeleton";
+import Notification from "../../../../components/ui/Notification";
 
 type Selection = { kind: "topic" | "subtopic" | "lesson"; id: string } | null;
 type Table = "topics" | "subtopics" | "lessons";
@@ -30,12 +30,6 @@ export default function AdminCoursePage() {
     [],
   );
   const reload = useCallback(() => setVersion((v) => v + 1), []);
-
-  useEffect(() => {
-    if (!message) return;
-    const timer = setTimeout(() => setMessage(null), message.type === "error" || message.action ? 10000 : 4000);
-    return () => clearTimeout(timer);
-  }, [message]);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,25 +121,13 @@ export default function AdminCoursePage() {
     <main className="p-6 text-paper">
       {dialogs}
 
-      <AnimatePresence>
-        {message && (
-          <motion.div
-            key={message.id}
-            role="status"
-            initial={{ opacity: 0, y: 24, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16 }}
-            onClick={() => setMessage(null)}
-            className={`fixed bottom-6 right-6 z-[90] flex max-w-sm cursor-pointer items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-2xl backdrop-blur ${
-              message.type === "ok" ? "border-jade/50 bg-[#0a1f1a]/95 text-jade" : "border-red-500/50 bg-[#2a0d12]/95 text-red-300"
-            }`}
-          >
-            <span className="text-lg">{message.type === "ok" ? "✓" : "⚠"}</span>
+      {message && (
+        <Notification key={message.id} type={message.type === "ok" ? "success" : "error"} onDismiss={() => setMessage(null)}>
             {message.text}
             {message.action && (
               <button
-                onClick={(event) => {
-                  event.stopPropagation();
+                type="button"
+                onClick={() => {
                   setMessage(null);
                   message.action?.onClick();
                 }}
@@ -154,9 +136,8 @@ export default function AdminCoursePage() {
                 {message.action.label}
               </button>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </Notification>
+      )}
 
       <div className="grid gap-6 p-6 lg:grid-cols-[380px_minmax(0,1fr)]">
         <aside className="space-y-3 self-start">

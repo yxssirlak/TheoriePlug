@@ -4,18 +4,20 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { createClient } from "../../lib/supabase"; 
 import GlassDatePicker from "./GlassDatePicker"; // Zorg dat het pad klopt met waar je hem hebt opgeslagen
+import Notification from "../ui/Notification";
 
 export default function WelcomeModal({
   userId,
   onComplete,
 }: {
   userId: string;
-  onComplete: (newName: string) => void;
+  onComplete: (newName: string, examDate: string | null) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [examDate, setExamDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const supabase = createClient();
 
   useEffect(() => {
@@ -38,30 +40,33 @@ export default function WelcomeModal({
     e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
+    setSaveError("");
 
     try {
       // 1. Sla op in Auth metadata
-      await supabase.auth.updateUser({
+      const { error: authError } = await supabase.auth.updateUser({
         data: { 
           first_name: name.trim(),
           exam_date: examDate || null
         },
       });
+      if (authError) throw new Error(authError.message);
 
       // 2. Werk profiles tabel bij
-      await supabase
+      const { error: profileError } = await supabase
         .from("profiles")
         .update({ 
-          first_name: name.trim(),
-          exam_date: examDate || null
+          first_name: name.trim()
         })
         .eq("id", userId);
+      if (profileError) throw new Error(`Je examendatum is opgeslagen, maar je profielnaam niet: ${profileError.message}`);
 
       // 3. Sluit modal en stuur de naam terug
       setIsOpen(false);
-      onComplete(name.trim());
+      onComplete(name.trim(), examDate || null);
     } catch (error) {
       console.error("Fout bij opslaan gegevens:", error);
+      setSaveError(error instanceof Error ? error.message : "Opslaan is mislukt. Probeer het opnieuw.");
     } finally {
       setLoading(false);
     }
@@ -121,6 +126,8 @@ export default function WelcomeModal({
               />
             </div>
             
+            {saveError && <Notification onDismiss={() => setSaveError("")}>{saveError}</Notification>}
+
             <button
               type="submit"
               disabled={loading || !name.trim()}

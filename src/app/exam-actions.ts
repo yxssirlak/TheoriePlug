@@ -3,7 +3,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { z } from "zod";
-import { examSchema } from "../lib/exam-simulator";
+import { adminExamLoadSchema, examSchema, EXAM_MAX_QUESTIONS, EXAM_QUESTION_TYPES } from "../lib/exam-simulator";
+import { examReviewSchema } from "../lib/exam-review";
 
 async function session(admin = false) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -46,25 +47,42 @@ export async function loadAdminExam(id: string) {
   const client = await session(true);
   const { data, error } = await client.rpc("exam_admin_definition", { p_exam_id: id });
   if (error) failure(error, "Examen laden mislukt.");
-  return examSchema.parse(data);
+  return adminExamLoadSchema.parse(data);
 }
 
 export async function saveAdminExam(input: unknown) {
-  const client = await session(true);
-  const parsed = examSchema.safeParse(input);
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Ongeldige examengegevens.");
-  const { error } = await client.rpc("exam_save_definition", { p_definition: parsed.data });
-  if (error) failure(error, "Examen opslaan mislukt.");
+  try {
+    const client = await session(true);
+    const parsed = examSchema.safeParse(input);
+    if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Ongeldige examengegevens." };
+    const { error } = await client.rpc("exam_save_definition", { p_definition: parsed.data });
+    if (error) {
+      console.error("Examen opslaan mislukt:", error.message);
+      return { ok: false as const, error: "Examen opslaan mislukt. Controleer je verbinding en probeer opnieuw." };
+    }
+    return { ok: true as const };
+  } catch (error) {
+    console.error("Examen opslaan mislukt:", error);
+    return { ok: false as const, error: "Examen opslaan mislukt. Controleer of je bent ingelogd en probeer opnieuw." };
+  }
 }
 
 export async function prepareExamImage(examId: string, mime: string, size: number) {
   z.string().uuid().parse(examId);
-  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  if (!allowed.includes(mime) || !Number.isInteger(size) || size <= 0 || size > 10 * 1024 * 1024) {
-    throw new Error("Kies een JPG, PNG, WebP of GIF van maximaal 10 MB.");
+  const maximumSize = mime === "video/mp4" ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+  const extensions: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "video/mp4": "mp4",
+  };
+  const extension = extensions[mime];
+  if (!extension || !Number.isInteger(size) || size <= 0 || size > maximumSize) {
+    throw new Error("Kies een JPG, PNG, WebP of GIF van maximaal 10 MB, of een MP4 van maximaal 50 MB.");
   }
   const client = await session(true);
-  const path = `${examId}/${crypto.randomUUID()}`;
+  const path = `${examId}/${crypto.randomUUID()}.${extension}`;
   const { data, error } = await client.storage.from("exam-images").createSignedUploadUrl(path);
   if (error) failure(error, "Upload voorbereiden mislukt.");
   return { path, token: data.token };
@@ -81,6 +99,28 @@ export async function listStudentExams() {
   })).parse(data);
 }
 
+export async function loadExamReview(attemptId: string) {
+  const id = z.string().uuid().safeParse(attemptId);
+  if (!id.success) return { ok: false as const, error: "Ongeldige examenpoging." };
+  try {
+    const client = await session();
+    const { data, error } = await client.rpc("exam_attempt_review", { p_attempt_id: id.data });
+    if (error) {
+      console.error("Examen nakijken mislukt:", error.message);
+      return { ok: false as const, error: "De vragen konden niet worden geladen. Controleer je toegang en probeer opnieuw." };
+    }
+    const review = examReviewSchema.safeParse(data);
+    if (!review.success) {
+      console.error("Ongeldige momentopname bij examen nakijken:", review.error.message);
+      return { ok: false as const, error: "De opgeslagen vragen konden niet worden weergegeven. Neem contact op met de beheerder." };
+    }
+    return { ok: true as const, questions: review.data };
+  } catch (error) {
+    console.error("Examen nakijken mislukt:", error);
+    return { ok: false as const, error: "De vragen konden niet worden geladen. Controleer of je bent ingelogd en probeer opnieuw." };
+  }
+}
+
 export async function attemptAction(input: {
   examId: string; action: "start" | "get" | "save" | "submit"; attemptId?: string;
   answers?: Record<string, unknown>; marks?: string[]; revision?: number;
@@ -88,7 +128,7 @@ export async function attemptAction(input: {
   const schema = z.object({
     examId: z.string().uuid(), action: z.enum(["start", "get", "save", "submit"]),
     attemptId: z.string().uuid().optional(), answers: z.record(z.string(), z.unknown()).optional(),
-    marks: z.array(z.string().uuid()).max(200).optional(), revision: z.number().int().min(0).optional(),
+    marks: z.array(z.string().uuid()).max(EXAM_MAX_QUESTIONS).optional(), revision: z.number().int().min(0).optional(),
   }).strict();
   const request = schema.parse(input);
   const client = await session();
@@ -110,6 +150,6 @@ export async function attemptAction(input: {
     score: z.number().nullable(), question_count: z.number(), passing_score: z.number(),
     result: z.array(z.object({ question_id: z.string(), question_text: z.string(), correct: z.boolean(), explanation: z.string() })).nullable(),
     questions: z.array(z.object({ id: z.string().uuid(), question_text: z.string(), image_url: z.string().nullable(),
-      question_type: z.enum(["number", "multiple_choice", "ordering"]), options: z.array(option) })),
+      question_type: z.enum(EXAM_QUESTION_TYPES), options: z.array(option) })),
   }).parse(data);
 }

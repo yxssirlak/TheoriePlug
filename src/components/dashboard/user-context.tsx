@@ -6,6 +6,7 @@ export type PlatformUser = {
   id: string;
   email: string;
   name: string;
+  examDate: string | null;
 };
 
 const UserContext = createContext<PlatformUser | null>(null);

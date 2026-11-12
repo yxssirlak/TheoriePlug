@@ -31,7 +31,7 @@ const reviews = [
 ];
 
 const faqs = [
-  { q: "Lijken de oefenexamens op die van het CBR?", a: "Ja, 100%. Onze interface, timer en vraagstelling (inclusief gevaarherkenning, kennis en inzicht) zijn gebouwd om het CBR-examen exact na te bootsen." },
+  { q: "Lijken de oefenexamens op die van het CBR?", a: "Ja. De oefenexamens combineren de vraagtypen, video's en situaties in één examen met een globale tijdslimiet en uitslag." },
   { q: "Kan ik op mijn telefoon oefenen?", a: "Absoluut. Ons platform is volledig geoptimaliseerd voor zowel je mobiel, tablet als laptop. Leer waar en wanneer je wilt." },
   { q: "Gaan de pakketten direct in?", a: "De tijd van je pakket gaat pas lopen op het moment dat je voor het eerst inlogt op het leerplatform, niet op het moment van aankoop." },
   { q: "Wat is 'Adaptive' leren?", a: "Ons systeem herkent welke onderwerpen je lastig vindt (bijv. voorrangsregels) en laat je daar gerichte flashcards en extra vragen over zien." },

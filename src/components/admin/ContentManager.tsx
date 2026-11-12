@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "../../lib/supabase";
 import { uploadMedia } from "../../lib/course/storage";
 import { useDialogs } from "./Dialog";
 import { SkeletonList } from "../ui/PageSkeleton";
+import Notification from "../ui/Notification";
 
 type Row = Record<string, unknown> & { id: string; sort_order: number; is_published: boolean };
 
@@ -40,12 +40,6 @@ export default function ContentManager({ table, title, intro, singular, fields, 
 
   const notify = useCallback((type: "ok" | "error", text: string) => setToast({ id: Date.now(), type, text }), []);
   const reload = useCallback(() => setVersion((v) => v + 1), []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), toast.type === "error" ? 8000 : 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,24 +90,7 @@ export default function ContentManager({ table, title, intro, singular, fields, 
   return (
     <main className="p-6">
       {dialogs}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            key={toast.id}
-            role="status"
-            initial={{ opacity: 0, y: 24, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16 }}
-            onClick={() => setToast(null)}
-            className={`fixed bottom-6 right-6 z-[90] flex max-w-sm cursor-pointer items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-2xl backdrop-blur ${
-              toast.type === "ok" ? "border-jade/50 bg-[#0a1f1a]/95 text-jade" : "border-red-500/50 bg-[#2a0d12]/95 text-red-300"
-            }`}
-          >
-            <span className="text-lg">{toast.type === "ok" ? "✓" : "⚠"}</span>
-            {toast.text}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {toast && <Notification key={toast.id} type={toast.type === "ok" ? "success" : "error"} onDismiss={() => setToast(null)}>{toast.text}</Notification>}
 
       <h1 className="font-display text-2xl font-extrabold">
         <span className="text-lime">{title}</span>

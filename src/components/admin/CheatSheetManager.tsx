@@ -2,14 +2,17 @@
 
   import { useCallback, useEffect, useState, type DragEvent } from "react";
   import { createClient } from "../../lib/supabase";
-  import { blocksByColumn, legacySheetRows, moveSheetBlock, newBlock, setSheetRowColumns, SHEET_BUCKET, type SheetBlock, type SheetBlockType, type SheetPage, type SheetRow } from "../../lib/cheat-sheet";
+  import { blocksByColumn, lastEditedSheet, LAST_EDITED_SHEET_KEY, legacySheetRows, moveSheetBlock, newBlock, setSheetRowColumns, SHEET_BUCKET, type SheetBlock, type SheetBlockType, type SheetPage, type SheetRow } from "../../lib/cheat-sheet";
   import SheetPageView, { SheetBlockView } from "../cheat-sheet/SheetPageView";
   import Notification from "../ui/Notification";
   import { useDialogs } from "./Dialog";
   import { SkeletonList } from "../ui/PageSkeleton";
+  import ExamSelect from "./exam-builder/ExamSelect";
+  import { ExamToggle } from "./exam-builder/ExamToggle";
 
-  const input = "mt-1 w-full rounded-xl border border-white/10 bg-surface-raised px-3 py-2 text-paper outline-none focus:border-lime";
-  const button = "rounded-xl border border-white/20 px-3 py-2 text-sm font-bold text-paper hover:border-lime disabled:opacity-40";
+  const input = "mt-1.5 min-h-11 w-full rounded-xl border border-white/[0.09] bg-[#202024] px-3.5 py-2 text-sm font-normal normal-case tracking-normal text-white outline-none transition focus:border-[#CCFF00]/45 focus:ring-2 focus:ring-[#CCFF00]/10";
+  const button = "inline-flex min-h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-3 text-xs font-semibold text-white/75 transition hover:border-white/25 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00] disabled:opacity-40";
+  const label = "block min-w-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white/50";
   const labels: Record<SheetBlockType, string> = { text: "Tekst", image: "Afbeelding", reveal: "Draaikaart", callout: "Uitgelicht" };
 
   export default function CheatSheetManager() {
@@ -27,15 +30,33 @@
     const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
     const { confirm, element: dialogs } = useDialogs();
 
-    const load = useCallback(() => (async () => {
+    const load = useCallback(async () => {
       const { data, error } = await supabase.from("cheat_sheet_pages").select("*").order("sort_order").order("created_at");
       if (error) throw new Error(error.message);
       return data as SheetPage[];
-    })().then(setPages), [supabase]);
+    }, [supabase]);
+
+    function prepareDraft(page: SheetPage): SheetPage {
+      const layout = page.sheet_rows == null ? legacySheetRows(page.blocks, page.columns) : null;
+      return layout ? { ...page, sheet_rows: layout.rows, blocks: layout.blocks } : page;
+    }
+
+    function rememberEdited(id: string) {
+      try { window.localStorage.setItem(LAST_EDITED_SHEET_KEY, id); }
+      catch (error) { console.warn("Laatst bewerkte cheatsheetpagina kon niet worden onthouden:", error); }
+    }
 
     useEffect(() => {
       let active = true;
-      load().catch((error: unknown) => { if (active) setMessage({ type: "error", text: error instanceof Error ? error.message : "Laden mislukt." }); })
+      load().then((loaded) => {
+        if (!active) return;
+        setPages(loaded);
+        let lastId: string | null = null;
+        try { lastId = window.localStorage.getItem(LAST_EDITED_SHEET_KEY); }
+        catch (error) { console.warn("Laatst bewerkte cheatsheetpagina kon niet worden geladen:", error); }
+        const page = lastEditedSheet(loaded, lastId);
+        if (page) setDraft(prepareDraft(page));
+      }).catch((error: unknown) => { if (active) setMessage({ type: "error", text: error instanceof Error ? error.message : "Laden mislukt." }); })
         .finally(() => { if (active) setLoading(false); });
       return () => { active = false; };
     }, [load]);
@@ -48,6 +69,7 @@
     }, [dirty]);
 
     function patch(changes: Partial<SheetPage>) {
+      if (draft) rememberEdited(draft.id);
       setDraft((current) => current ? { ...current, ...changes } : current);
       setDirty(true);
     }
@@ -63,10 +85,10 @@
     async function select(page: SheetPage) {
       if (busy || (draft?.id !== page.id && !await canLeave())) return;
       if (draft?.id !== page.id) {
-        const layout = page.sheet_rows == null ? legacySheetRows(page.blocks, page.columns) : null;
-        setDraft(layout ? { ...page, sheet_rows: layout.rows, blocks: layout.blocks } : page);
+        setDraft(prepareDraft(page));
         setEditingBlockId(null);
         setAddingColumn(null);
+        setPreview(false);
         setDirty(false);
       }
     }
@@ -79,10 +101,13 @@
         const { data, error } = await supabase.from("cheat_sheet_pages").insert({ title: "Nieuwe pagina", sort_order: pages.length }).select("*").single();
         if (error) throw new Error(error.message);
         const page = data as SheetPage;
-        const layout = legacySheetRows(page.blocks, page.columns);
-        setDraft({ ...page, sheet_rows: layout.rows, blocks: layout.blocks });
+        setDraft(prepareDraft(page));
+        rememberEdited(page.id);
+        setEditingBlockId(null);
+        setAddingColumn(null);
+        setPreview(false);
         setDirty(false);
-        await load();
+        setPages(await load());
       } catch (error) {
         setMessage({ type: "error", text: error instanceof Error ? error.message : "Pagina aanmaken mislukt." });
       } finally { setBusy(false); }
@@ -105,8 +130,9 @@
         const { data, error } = await supabase.from("cheat_sheet_pages").update({ title, chapter_number, subtitle, accent_color, background_color, text_color, header_text_color, columns, blocks, sheet_rows, sort_order, is_published }).eq("id", draft.id).select("*").single();
         if (error) throw new Error(error.message);
         setDraft(data as SheetPage);
+        rememberEdited(draft.id);
         setDirty(false);
-        await load();
+        setPages(await load());
         setMessage({ type: "success", text: "Pagina opgeslagen." });
       } catch (error) {
         setMessage({ type: "error", text: error instanceof Error ? error.message : "Opslaan mislukt." });
@@ -120,9 +146,14 @@
       try {
         const { error } = await supabase.from("cheat_sheet_pages").delete().eq("id", draft.id);
         if (error) throw new Error(error.message);
-        setDraft(null);
+        const remaining = await load();
+        setPages(remaining);
+        const next = lastEditedSheet(remaining, null);
+        setDraft(next ? prepareDraft(next) : null);
+        setEditingBlockId(null);
+        setAddingColumn(null);
+        setPreview(false);
         setDirty(false);
-        await load();
         setMessage({ type: "success", text: "Pagina verwijderd." });
       } catch (error) {
         setMessage({ type: "error", text: error instanceof Error ? error.message : "Verwijderen mislukt." });
@@ -214,61 +245,79 @@
             {block.image_path && <span className="mt-2 block text-lime">Afbeelding toegevoegd</span>}
           </label>
           <label className="block text-sm">Beschrijving afbeelding<input className={input} value={block.image_alt} onChange={(event) => patchBlock(block.id, { image_alt: event.target.value })} /></label>
-          <label className="block text-sm">Afbeelding passend maken<select className={input} value={block.image_fit} onChange={(event) => patchBlock(block.id, { image_fit: event.target.value === "contain" ? "contain" : "cover" })}><option value="cover">Vullen (kan bijsnijden)</option><option value="contain">Volledige afbeelding</option></select></label>
+          <div className="space-y-1.5"><span className={label}>Afbeelding passend maken</span><ExamSelect label="Afbeelding passend maken" value={block.image_fit} options={[{ value: "cover", label: "Vullen (kan bijsnijden)" }, { value: "contain", label: "Volledige afbeelding" }]} onChange={(image_fit) => patchBlock(block.id, { image_fit })} disabled={busy} /></div>
         </>}
-        <label className="block text-sm">Verplaats naar rij<select className={input} value={row.id} onChange={(event) => move(block.id, event.target.value, 0)}>{draft.sheet_rows?.map((item, index) => <option key={item.id} value={item.id}>Rij {index + 1}</option>)}</select></label>
+        <div className="space-y-1.5"><span className={label}>Verplaats naar rij</span><ExamSelect label="Verplaats naar rij" value={row.id} options={(draft.sheet_rows ?? []).map((item, index) => ({ value: item.id, label: `Rij ${index + 1}` }))} onChange={(id) => move(block.id, id, 0)} disabled={busy} /></div>
         </>}
       </div>;
     }
 
     return (
-      <main className="p-6">
+      <main className="-m-4 min-h-screen bg-[#0e0e11] px-4 py-6 text-white sm:-m-6 sm:px-6 sm:py-8 lg:-m-10 lg:px-10 lg:py-10">
         {dialogs}
         {message && <Notification type={message.type} onDismiss={() => setMessage(null)}>{message.text}</Notification>}
-        <h1 className="font-display text-2xl font-extrabold text-lime">Cheat sheet boek</h1>
-        <p className="mt-1 text-sm text-paper/60">Maak pagina&apos;s met eigen kleuren en sleep blokken in de gewenste volgorde. Wijzigingen worden zichtbaar na opslaan en publiceren.</p>
-        <div className="mt-6 grid gap-6 xl:grid-cols-[250px_minmax(0,1fr)]">
-          <aside>
-            <button type="button" className={button} disabled={busy} onClick={createPage}>+ Pagina</button>
-            {loading && <div role="status" aria-label="Pagina's laden" className="mt-3"><span className="sr-only">Pagina&apos;s laden...</span><SkeletonList /></div>}
-            <ul className="mt-4 space-y-2">{pages.map((page) => <li key={page.id}><button type="button" disabled={busy} onClick={() => select(page)} className={`w-full rounded-xl border p-3 text-left text-sm ${draft?.id === page.id ? "border-lime text-lime" : "border-white/10 text-paper"}`}>{page.is_published ? "●" : "○"} {page.title}</button></li>)}</ul>
+        <div className="mx-auto max-w-[1500px] space-y-6">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Cheat sheet boek</h1>
+            <p className="mt-2 max-w-2xl text-sm text-white/50">Beheer je pagina&apos;s en bewerk de inhoud. Wijzigingen zijn zichtbaar na opslaan en publiceren.</p>
+          </div>
+          {draft && <div className="flex flex-wrap items-center gap-2">
+            <span role="status" className={`mr-1 text-xs ${dirty ? "text-amber-300" : "text-white/45"}`}>{dirty ? "Niet opgeslagen" : "Opgeslagen"}</span>
+            <button type="button" className={button} disabled={busy} onClick={() => setPreview(!preview)} aria-pressed={preview}>{preview ? "Verder bewerken" : "Bekijk als leerling"}</button>
+            <button type="button" onClick={save} disabled={busy || !dirty} className="inline-flex h-11 items-center justify-center rounded-xl bg-[#CCFF00] px-5 text-sm font-bold text-[#10140a] transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00] disabled:opacity-40">Opslaan</button>
+          </div>}
+        </header>
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(280px,320px)_minmax(0,1fr)]">
+          <aside className="space-y-5">
+            <section aria-labelledby="sheet-pages-title" className="rounded-3xl border border-white/[0.08] bg-[#18181b] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div><h2 id="sheet-pages-title" className="text-sm font-bold">Pagina&apos;s</h2><p className="mt-1 text-xs text-white/40">{pages.length} pagina&apos;s</p></div>
+                <button type="button" className={button} disabled={busy} onClick={createPage}>+ Pagina</button>
+              </div>
+              {loading && <div role="status" aria-label="Pagina's laden" className="mt-3"><span className="sr-only">Pagina&apos;s laden...</span><SkeletonList /></div>}
+              <ul className="mt-4 max-h-64 space-y-2 overflow-y-auto">{pages.map((page, index) => <li key={page.id}><button type="button" disabled={busy} onClick={() => void select(page)} aria-current={draft?.id === page.id ? "page" : undefined} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left text-sm transition focus-visible:outline-2 focus-visible:outline-[#CCFF00] ${draft?.id === page.id ? "border-[#CCFF00]/40 bg-[#CCFF00]/[0.07] text-white" : "border-white/[0.07] bg-white/[0.02] text-white/70 hover:border-white/20"}`}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] font-mono text-xs text-white/50">{String(index + 1).padStart(2, "0")}</span><span className="min-w-0 flex-1"><span className="block truncate font-semibold">{page.title}</span><span className={`mt-0.5 block text-[10px] ${page.is_published ? "text-[#CCFF00]/70" : "text-white/40"}`}>{page.is_published ? "Gepubliceerd" : "Concept"}</span></span></button></li>)}</ul>
+            </section>
+            {draft && <fieldset disabled={busy} className="space-y-4 rounded-3xl border border-white/[0.08] bg-[#18181b] p-4">
+              <legend className="sr-only">Pagina-instellingen</legend>
+              <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#CCFF00]/65">Geselecteerde pagina</p><h2 className="mt-1 text-sm font-bold">Pagina-instellingen</h2></div>
+              <label className={label}>Hoofdstuknaam<input className={input} value={draft.title} onChange={(e) => patch({ title: e.target.value })} /></label>
+              <label className={label}>Ondertitel<input className={input} value={draft.subtitle} onChange={(e) => patch({ subtitle: e.target.value })} /></label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={label}>Hoofdstuknummer<input className={input} type="number" min="0" step="1" placeholder="Automatisch" value={draft.chapter_number ?? ""} onChange={(e) => patch({ chapter_number: e.target.value === "" ? null : Number(e.target.value) })} /></label>
+                <label className={label}>Paginavolgorde<input className={input} type="number" step="1" value={draft.sort_order} onChange={(e) => patch({ sort_order: e.target.value === "" ? NaN : Number(e.target.value) })} /></label>
+              </div>
+              <div className="grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-4">
+                <label className={label}>Accentkleur<input className={`${input} h-11 cursor-pointer p-1.5`} type="color" value={draft.accent_color} onChange={(e) => patch({ accent_color: e.target.value })} /></label>
+                <label className={label}>Achtergrondkleur<input className={`${input} h-11 cursor-pointer p-1.5`} type="color" value={draft.background_color} onChange={(e) => patch({ background_color: e.target.value })} /></label>
+                <label className={label}>Tekstkleur<input className={`${input} h-11 cursor-pointer p-1.5`} type="color" value={draft.text_color} onChange={(e) => patch({ text_color: e.target.value })} /></label>
+                <label className={label}>Tekstkleur kop<input className={`${input} h-11 cursor-pointer p-1.5`} type="color" value={draft.header_text_color} onChange={(e) => patch({ header_text_color: e.target.value })} /></label>
+              </div>
+              <ExamToggle checked={draft.is_published} onChange={(is_published) => patch({ is_published })} label={draft.is_published ? "Gepubliceerd" : "Concept"} disabled={busy} />
+              <button type="button" onClick={() => void remove()} disabled={busy} className={`${button} w-full border-red-300/10 text-red-200/65 hover:border-red-300/30 hover:text-red-100`}>Pagina verwijderen</button>
+            </fieldset>}
           </aside>
           {draft && <section className="min-w-0 space-y-5">
             <fieldset disabled={busy} className="space-y-5">
-            <div className="grid gap-3 rounded-2xl border border-white/10 p-4 sm:grid-cols-2 xl:grid-cols-4">
-              <label className="text-sm">Hoofdstuknummer<input className={input} type="number" min="0" step="1" placeholder="Automatisch" value={draft.chapter_number ?? ""} onChange={(e) => patch({ chapter_number: e.target.value === "" ? null : Number(e.target.value) })} /></label>
-              <label className="text-sm">Hoofdstuknaam<input className={input} value={draft.title} onChange={(e) => patch({ title: e.target.value })} /></label>
-              <label className="text-sm">Ondertitel<input className={input} value={draft.subtitle} onChange={(e) => patch({ subtitle: e.target.value })} /></label>
-              <label className="text-sm">Paginavolgorde<input className={input} type="number" step="1" value={draft.sort_order} onChange={(e) => patch({ sort_order: e.target.value === "" ? NaN : Number(e.target.value) })} /></label>
-              <label className="text-sm">Accentkleur<input className={`${input} h-11`} type="color" value={draft.accent_color} onChange={(e) => patch({ accent_color: e.target.value })} /></label>
-              <label className="text-sm">Achtergrondkleur<input className={`${input} h-11`} type="color" value={draft.background_color} onChange={(e) => patch({ background_color: e.target.value })} /></label>
-              <label className="text-sm">Tekstkleur<input className={`${input} h-11`} type="color" value={draft.text_color} onChange={(e) => patch({ text_color: e.target.value })} /></label>
-              <label className="text-sm">Tekstkleur kop<input className={`${input} h-11`} type="color" value={draft.header_text_color} onChange={(e) => patch({ header_text_color: e.target.value })} /></label>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.is_published} onChange={(e) => patch({ is_published: e.target.checked })} /> Gepubliceerd</label>
-            </div>
-            <div className="sticky top-0 z-30 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-surface p-3 shadow-lg"><button type="button" onClick={save} disabled={busy || !dirty} className="rounded-xl bg-lime px-5 py-2 font-bold text-ink disabled:opacity-40">Opslaan</button><button type="button" onClick={remove} disabled={busy} className={button}>Pagina verwijderen</button>{dirty && <span className="text-sm text-paper/60">Niet-opgeslagen wijzigingen</span>}</div>
+            <div className="rounded-3xl border border-white/[0.08] bg-[#18181b] p-4 sm:p-5">
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="font-display text-xl font-bold">Pagina bewerken</h2>
+              <div className="mr-auto"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#CCFF00]/65">Inhoud</p><h2 className="mt-1 text-sm font-bold">Pagina bewerken</h2></div>
               <button type="button" className={button} disabled={busy || preview} onClick={() => patch({ sheet_rows: [...(draft.sheet_rows ?? []), { id: crypto.randomUUID(), columns: 1 }] })}>+ Rij toevoegen</button>
-              <button type="button" className={button} onClick={() => setPreview(!preview)} aria-pressed={preview}>{preview ? "Verder bewerken" : "Bekijk als leerling"}</button>
             </div>
-            <p className="text-sm text-paper/60">Kies per rij één tot drie kolommen. Sleep blokken naar een kolom of voeg ze toe met de plusknop. Bij minder kolommen blijven alle blokken behouden.</p>
-            {!preview && <div className="flex flex-wrap gap-2" aria-label="Blokken om naar de pagina te slepen">
+            <p className="mt-2 text-xs leading-relaxed text-white/45">Kies per rij één tot drie kolommen. Sleep blokken naar een kolom of voeg ze toe met de plusknop. Bij minder kolommen blijven alle blokken behouden.</p>
+            {!preview && <div className="mt-4 flex flex-wrap gap-2" aria-label="Blokken om naar de pagina te slepen">
               {(Object.keys(labels) as SheetBlockType[]).map((type) => <span key={type} draggable={!busy}
                 onDragStart={(event) => { setDragId(null); setDragType(type); event.dataTransfer.effectAllowed = "copy"; event.dataTransfer.setData("text/plain", type); }}
                 onDragEnd={() => setDragType(null)} className={`${button} cursor-grab`}>⋮⋮ {labels[type]}</span>)}
             </div>}
+            </div>
             <SheetPageView page={draft}>{preview ? undefined : (
               <div className="space-y-5 p-4 sm:p-6">
                 {(draft.sheet_rows ?? []).map((row, rowIndex) => {
                     return <div key={row.id} className="space-y-3">
                       <div className="flex flex-wrap items-center gap-2 rounded-xl bg-surface p-3 text-paper">
                         <strong className="mr-auto text-sm">Rij {rowIndex + 1}</strong>
-                        <label className="text-sm">Kolommen
-                          <select aria-label={`Aantal kolommen in rij ${rowIndex + 1}`} className="ml-2 rounded-lg border border-white/20 bg-surface-raised px-3 py-2" value={row.columns} onChange={(event) => updateRowColumns(row, Number(event.target.value))}>
-                            <option value={1}>1 kolom</option><option value={2}>2 kolommen</option><option value={3}>3 kolommen</option>
-                          </select>
-                        </label>
+                        <div className="w-36"><ExamSelect label={`Aantal kolommen in rij ${rowIndex + 1}`} value={String(row.columns)} options={[{ value: "1", label: "1 kolom" }, { value: "2", label: "2 kolommen" }, { value: "3", label: "3 kolommen" }]} onChange={(value) => updateRowColumns(row, Number(value))} disabled={busy} /></div>
                         <button type="button" className={button} disabled={busy || rowIndex === 0} onClick={() => moveRow(rowIndex, -1)} aria-label={`Rij ${rowIndex + 1} omhoog`}>↑</button>
                         <button type="button" className={button} disabled={busy || rowIndex === (draft.sheet_rows?.length ?? 0) - 1} onClick={() => moveRow(rowIndex, 1)} aria-label={`Rij ${rowIndex + 1} omlaag`}>↓</button>
                         <button type="button" className={button} disabled={busy} onClick={() => { const rows = [...(draft.sheet_rows ?? [])]; rows.splice(rowIndex + 1, 0, { id: crypto.randomUUID(), columns: 1 }); patch({ sheet_rows: rows }); }}>+ Rij hieronder</button>
@@ -290,7 +339,16 @@
               </div>
             )}</SheetPageView>
             </fieldset>
+            <div className="sticky bottom-4 z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#18181b]/95 p-3 shadow-xl backdrop-blur">
+              <span role="status" className={`text-xs ${dirty ? "text-amber-300" : "text-white/45"}`}>{dirty ? "Niet-opgeslagen wijzigingen" : "Alle wijzigingen opgeslagen"}</span>
+              <div className="flex items-center gap-2">
+                <button type="button" className={button} disabled={busy} onClick={() => setPreview(!preview)} aria-pressed={preview}>{preview ? "Verder bewerken" : "Bekijk als leerling"}</button>
+                <button type="button" onClick={() => void save()} disabled={busy || !dirty} className="inline-flex h-10 items-center justify-center rounded-xl bg-[#CCFF00] px-4 text-xs font-bold text-[#10140a] transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CCFF00] disabled:opacity-40">Opslaan</button>
+              </div>
+            </div>
           </section>}
+          {!draft && !loading && <section className="flex min-h-64 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-[#18181b]/65 p-6 text-center text-sm text-white/50">Maak een pagina aan om te beginnen.</section>}
+        </div>
         </div>
       </main>
     );
