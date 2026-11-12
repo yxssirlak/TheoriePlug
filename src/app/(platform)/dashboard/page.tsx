@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useUser } from "../../../components/dashboard/user-context";
 import AuthenticatedPage from "../../../components/dashboard/AuthenticatedPage";
 import Notification from "../../../components/ui/Notification";
+import { createClient } from "../../../lib/supabase";
+import { Skeleton } from "../../../components/ui/PageSkeleton"; // <
 
 const QUICK_ACTIONS = [
   { href: "/oefenexamens", sticker: "oefenexamens", title: "Oefenexamen starten", text: "Doe een examen zoals bij het CBR.", accent: true },
@@ -47,10 +49,24 @@ export default function DashboardPage() {
 function DashboardContent() {
   const user = useUser();
   const tip = TIPS[new Date().getDate() % TIPS.length];
+  
   const [success, setSuccess] = useState(false);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [dateLoading, setDateLoading] = useState(true);
   const [dateError, setDateError] = useState<string | null>(null);
+
+  // Toegevoegd: Variabelen voor de videocursus
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [videoData, setVideoData] = useState<any>(null); // Dit kun je later vullen vanuit je database
+
+  // Toegevoegd: Tijdelijke of default stats zodat STATS array werkt
+  const [stats, setStats] = useState({
+    averageScore: 0,
+    examCount: 0,
+    examAvailable: 50,
+    questionCount: 0
+  });
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("success") === "true") {
@@ -92,7 +108,7 @@ function DashboardContent() {
     return () => { active = false; };
   }, []);
 
-  // STATS staat nu binnen de component zodat daysLeft dynamisch ingeladen kan worden
+  // STATS staat nu binnen de component en verwijst netjes naar de `stats` state!
   const STATS = [
     { id: "score", label: "Gemiddelde score", value: stats.averageScore, max: 100, type: "ring", color: "lime" },
     { id: "exams", label: "Oefenexamens", value: stats.examCount, max: stats.examAvailable || 1, type: "bar", color: "jade" },
