@@ -160,13 +160,14 @@ function makeBeamTexture() {
     for (let x = 0; x < W; x++) {
       const nx = (x / (W - 1)) * 2 - 1;
       const d = Math.abs(nx) / halfW;
-      // gaussian across, with a window so the plane edge is exactly 0
-      const across = Math.exp(-3.2 * d * d) * (1 - sm(Math.abs(nx)));
+      // Zorgt dat de lichtbundel ruim vóór de rand van het 3D-vlak 100% op 0 staat
+      const edgeFade = Math.pow(1 - sm(Math.abs(nx) / 0.88), 2);
+      const across = Math.exp(-4.2 * d * d) * edgeFade;
       const i = (y * W + x) * 4;
       img.data[i] = 255;
       img.data[i + 1] = 255;
       img.data[i + 2] = 255;
-      img.data[i + 3] = Math.round(255 * across * along * 0.9);
+      img.data[i + 3] = Math.round(255 * across * along * 0.85);
     }
   }
   ctx.putImageData(img, 0, 0);
@@ -256,9 +257,11 @@ function HoodLogo({ src }: { src: string }) {
 function Audi({
   stateRef,
   logoSrc,
+  carScale = 1,
 }: {
   stateRef: { current: CarState };
   logoSrc?: string;
+  carScale?: number;
 }) {
   const root = useRef<THREE.Group>(null);
   const wheelL = useRef<THREE.Group>(null);
@@ -485,23 +488,34 @@ mats.revGlow.opacity += ((reversing ? 0.35 : 0) - mats.revGlow.opacity) * k;
   );
 }
 
-function TopCamera() {
+function TopCamera({ focus }: { focus?: { cx: number; cz: number; viewH: number } }) {
   const { camera } = useThree();
   useLayoutEffect(() => {
+    const cx = focus ? focus.cx : VIEW_W / 2;
+    const cz = focus ? focus.cz : VIEW_H / 2;
+    const vh = focus ? focus.viewH : VIEW_H;
+    const camH = vh / 2 / Math.tan((FOV / 2) * (Math.PI / 180));
+
     camera.up.set(0, 0, -1); // screen up = -z, screen right = +x (matches SVG)
-    camera.position.set(VIEW_W / 2, CAM_H, VIEW_H / 2);
-    camera.lookAt(VIEW_W / 2, 0, VIEW_H / 2);
+    camera.position.set(cx, camH, cz);
+    camera.lookAt(cx, 0, cz);
+    camera.near = Math.max(10, camH - 500);
+    camera.far = camH + 1000;
     camera.updateProjectionMatrix();
-  }, [camera]);
+  }, [camera, focus?.cx, focus?.cz, focus?.viewH]);
   return null;
 }
 
 export default function Car3D({
   stateRef,
   logoSrc,
+  focus,
+  carScale = 1,
 }: {
   stateRef: { current: CarState };
   logoSrc?: string;
+  focus?: { cx: number; cz: number; viewH: number };
+  carScale?: number;
 }) {
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -510,15 +524,15 @@ export default function Car3D({
         dpr={[1, 2]}
         camera={{
           fov: FOV,
-          near: 100,
+          near: 10,
           far: 4000,
           position: [VIEW_W / 2, CAM_H, VIEW_H / 2],
         }}
       >
-        <TopCamera />
+        <TopCamera focus={focus} />
         <ambientLight intensity={0.35} />
         <directionalLight position={[300, 900, -300]} intensity={1.6} />
-
+<Audi stateRef={stateRef} logoSrc={logoSrc} carScale={carScale} />
         {/* Self-contained reflections (no HDR download): sky panel + lime accent */}
         <Environment resolution={256} frames={1}>
           <Lightformer
@@ -545,7 +559,7 @@ export default function Car3D({
           />
         </Environment>
 
-        <Audi stateRef={stateRef} logoSrc={logoSrc} />
+        <Audi stateRef={stateRef} logoSrc={logoSrc} carScale={carScale} />
       </Canvas>
     </div>
   );

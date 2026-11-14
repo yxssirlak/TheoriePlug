@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { formatPrice, getPackage } from "../../lib/packages";
 import CheckoutForm from "./CheckoutForm";
 
+
 export const metadata: Metadata = {
   title: "Afrekenen — TheoriePlug",
   robots: { index: false, follow: false },

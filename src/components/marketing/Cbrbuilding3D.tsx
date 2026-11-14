@@ -947,16 +947,19 @@ function Campus({ stateRef, logoSrc }: { stateRef: RefObject<BuildingState>; log
 
 /* ---------- scène ---------- */
 
-function TopCamera({ viewH }: { viewH: number }) {
+function TopCamera({ viewH, cx = VIEW_W / 2, cz }: { viewH: number; cx?: number; cz?: number }) {
   // zelfde opzet als Car3D: scherm omhoog = -z, scherm rechts = +x
   const { camera } = useThree();
   useLayoutEffect(() => {
+    const targetZ = cz ?? viewH / 2;
     camera.up.set(0, 0, -1);
     const h = camHeight(viewH);
-    camera.position.set(VIEW_W / 2, h, viewH / 2);
-    camera.lookAt(VIEW_W / 2, 0, viewH / 2);
+    camera.position.set(cx, h, targetZ);
+    camera.lookAt(cx, 0, targetZ);
+    camera.near = Math.max(10, h - 700);
+    camera.far = h + 600;
     camera.updateProjectionMatrix();
-  }, [camera, viewH]);
+  }, [camera, viewH, cx, cz]);
   return null;
 }
 
@@ -1017,6 +1020,8 @@ export default function CbrBuilding3D({
   logoSrc,
   viewH = 1060,
   offsetY = 0,
+  cx = VIEW_W / 2,
+  cz,
 }: {
   stateRef: RefObject<BuildingState>;
   logoSrc?: string;
@@ -1024,8 +1029,13 @@ export default function CbrBuilding3D({
   viewH?: number;
   /** hoeveel de parkeerplaats/het gebouw naar beneden is geschoven (DY) */
   offsetY?: number;
+  /** optioneel camera-middelpunt X (handig voor mobiel) */
+  cx?: number;
+  /** optioneel camera-middelpunt Z (handig voor mobiel) */
+  cz?: number;
 }) {
   const CAM_H = camHeight(viewH);
+  const targetZ = cz ?? viewH / 2;
   return (
     <div className="absolute inset-0 pointer-events-none">
       <Canvas
@@ -1034,12 +1044,12 @@ export default function CbrBuilding3D({
         dpr={[1, 2]}
         camera={{
           fov: FOV,
-          near: CAM_H - 700,
-          far: CAM_H + 400,
-          position: [VIEW_W / 2, CAM_H, viewH / 2],
+          near: Math.max(10, CAM_H - 700),
+          far: CAM_H + 600,
+          position: [cx, CAM_H, targetZ],
         }}
       >
-        <TopCamera viewH={viewH} />
+        <TopCamera viewH={viewH} cx={cx} cz={targetZ} />
         <Lights offsetY={offsetY} />
         <Environment resolution={256} frames={1}>
           <Lightformer form="rect" intensity={1.6} position={[0, 6, 0]} rotation-x={Math.PI / 2} scale={[14, 14, 1]} />

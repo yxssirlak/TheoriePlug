@@ -372,17 +372,21 @@ export default function RoadmapSteps() {
   const mobLineRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const carWrapRef = useRef<HTMLDivElement>(null);
+  const mobCarWrapRef = useRef<HTMLDivElement>(null); // <-- NIEUW: voor het infaden op mobiel
   const carGRef = useRef<SVGGElement>(null);
   const deskCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const mobCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [cps, setCps] = useState([
-    { x: 372, y: 235 },
-    { x: 560, y: 530 },
-    { x: 460, y: 840 },
+    { x: 447, y: stretchY(165) },
+    { x: 472, y: stretchY(455) },
+    { x: 463, y: stretchY(835) },
   ]);
+
+  const [mobCps, setMobCps] = useState([175, 520, 865]);
+
   const [marks, setMarks] = useState({
-    teeth: { x: 372, y: 330, rot: 0 },
-    zebra: { x: 485, y: 772, rot: 0 },
+    teeth: { x: 382, y: stretchY(335), rot: -12 },
+    zebra: { x: 484, y: stretchY(735), rot: 14 },
   });
 
   const stopFracs = useRef<number[]>([0.14, 0.52, 0.92]);
@@ -421,6 +425,16 @@ export default function RoadmapSteps() {
     parked: false,
   });
 
+  const mobileCarState = useRef<CarState>({
+    x: 0,
+    y: 0,
+    heading: 90, // 90 graden = neus recht naar beneden langs de mobiele lijn
+    steer: 0,
+    headlights: false,
+    drive: "idle",
+    parked: false,
+  });
+
   const measure = useCallback(() => {
     const path = pathRef.current;
     const desk = deskRef.current;
@@ -452,53 +466,63 @@ export default function RoadmapSteps() {
     } else if (mobLineRef.current) {
       const box = mobLineRef.current.getBoundingClientRect();
       if (box.height > 0) {
+        const canvasW = box.width + 88; // -left-16 (-64px) en -right-6 (-24px)
+        const scaleY = 760 / canvasW;
+        const mYs: number[] = [];
         mobCardRefs.current.forEach((el) => {
           if (!el) return;
           const r = el.getBoundingClientRect();
-          const f = (r.top + r.height / 2 - box.top) / box.height;
-          fracs.push(Math.min(Math.max(f, 0), 1));
+          const cardCenterPx = r.top + r.height / 2 - box.top;
+          const cardSvgY = cardCenterPx * scaleY;
+          mYs.push(cardSvgY);
+          // Auto rijdt van y=85 (p=0) naar y=1212 (p=1, midden in het parkeervak)
+          const f = (cardSvgY - 85) / (1212 - 85);
+          fracs.push(Math.min(Math.max(f, 0.04), 0.95));
         });
+        if (mYs.length === 3) setMobCps(mYs);
       }
     }
 
     if (fracs.length) stopFracs.current = fracs;
 
-    if (path) {
+    if (path && desk && desk.offsetHeight > 0) {
       const total = path.getTotalLength();
-      const place = (targetY: number) => {
-        const M = 800;
-        let best = 0;
-        let bestD = Infinity;
-        for (let i = 0; i <= M; i++) {
-          const d = Math.abs(path.getPointAtLength((i / M) * total).y - targetY);
-          if (d < bestD) {
-            bestD = d;
-            best = i;
+      if (total > 0) {
+        const place = (targetY: number) => {
+          const M = 800;
+          let best = 0;
+          let bestD = Infinity;
+          for (let i = 0; i <= M; i++) {
+            const d = Math.abs(path.getPointAtLength((i / M) * total).y - targetY);
+            if (d < bestD) {
+              bestD = d;
+              best = i;
+            }
           }
-        }
-        const len = (best / M) * total;
-        const pt = path.getPointAtLength(len);
-        const b = path.getPointAtLength(Math.max(len - LOOK, 0));
-        const a = path.getPointAtLength(Math.min(len + LOOK, total));
-        const heading = Math.atan2(a.y - b.y, a.x - b.x) * (180 / Math.PI);
-        return { x: pt.x, y: pt.y, rot: heading - 90 };
-      };
-      setMarks({ teeth: place(stretchY(335)), zebra: place(stretchY(735)) });
-      setCps(
-        stopFracs.current.map((f) => {
-          const pt = path.getPointAtLength(f * total);
-          return { x: pt.x, y: pt.y };
-        })
-      );
+          const len = (best / M) * total;
+          const pt = path.getPointAtLength(len);
+          const b = path.getPointAtLength(Math.max(len - LOOK, 0));
+          const a = path.getPointAtLength(Math.min(len + LOOK, total));
+          const heading = Math.atan2(a.y - b.y, a.x - b.x) * (180 / Math.PI);
+          return { x: pt.x, y: pt.y, rot: heading - 90 };
+        };
+        setMarks({ teeth: place(stretchY(335)), zebra: place(stretchY(735)) });
+        setCps(
+          stopFracs.current.map((f) => {
+            const pt = path.getPointAtLength(f * total);
+            return { x: pt.x, y: pt.y };
+          })
+        );
+      }
     }
   }, []);
 
   const updateCar = useCallback((progress: number) => {
-    const isDesk = !!deskRef.current && deskRef.current.offsetHeight > 0;
-const raw = Math.min(Math.max(progress, 0), 1);
-const p = isDesk ? Math.min(raw / FINISH_AT, 1) : raw;
-    const carOpacity = String(Math.min(1, p / 0.03));
+    const raw = Math.min(Math.max(progress, 0), 1);
+    const p = Math.min(raw / FINISH_AT, 1); // Zorgt dat p op mobiel én PC gelijk loopt met de auto!
+    const carOpacity = String(Math.min(1, Math.max(0, (p - 0.005) / 0.055)));
     if (carWrapRef.current) carWrapRef.current.style.opacity = carOpacity;
+    if (mobCarWrapRef.current) mobCarWrapRef.current.style.opacity = carOpacity;
     if (carGRef.current) carGRef.current.style.opacity = carOpacity;
     const path = pathRef.current;
 
@@ -525,19 +549,20 @@ const p = isDesk ? Math.min(raw / FINISH_AT, 1) : raw;
       }
 
       carState.current.x = pt.x;
-carState.current.y = pt.y;
-      carState.current.heading = heading; 
+      carState.current.y = pt.y;
+      carState.current.heading = heading;
       carState.current.steer = steer;
       carGRef.current?.setAttribute(
         "transform",
         `translate(${pt.x.toFixed(2)} ${pt.y.toFixed(2)}) rotate(${(heading + 90).toFixed(2)}) scale(${CAR_SCALE})`
       );
-    } 
+    }
 
     const stops = stopFracs.current;
     const isParked = p >= PARK_AT;
-    const isGateOpen = p >= 0.78;
-    const near = stops.some((f) => Math.abs(p - f) < NEAR_FRAC);
+    const isGateOpen = p >= 0.72;
+    // Koplampen flashen ALLEEN als de auto vlak bij het midden van een kaart (1, 2 of 3) is
+    const near = p > 0.01 && stops.some((f) => Math.abs(p - f) < 0.065);
 
     setParked(isParked);
     setGateOpen(isGateOpen);
@@ -548,6 +573,10 @@ carState.current.y = pt.y;
       if (p >= f - LEAD_FRAC) lit = i + 1;
     });
     setActiveStep(lit);
+
+    mobileCarState.current.x = 460;
+    mobileCarState.current.y = 85 + p * (1212 - 85);
+    mobileCarState.current.heading = 90;
   }, []);
 
   useMotionValueEvent(smoothProgress, "change", (latest) => {
@@ -562,6 +591,7 @@ carState.current.y = pt.y;
       }, IDLE_DELAY);
     }
     updateCar(latest);
+    
   });
 
   useEffect(() => {
@@ -588,6 +618,10 @@ carState.current.y = pt.y;
     carState.current.parked = parked;
     buildingState.current.parked = parked;
     carState.current.drive = drive;
+
+    mobileCarState.current.headlights = headlights;
+    mobileCarState.current.parked = parked;
+    mobileCarState.current.drive = drive;
   }, [headlights, parked, drive]);
 
   const positions = [
@@ -698,12 +732,16 @@ carState.current.y = pt.y;
               </g>
 
               {/* Haaientanden in de bocht */}
-              <g transform={`translate(${marks.teeth.x} ${marks.teeth.y}) rotate(${marks.teeth.rot}) translate(-26 -6)`} opacity="0.8" fill="#ffffff">
-                <polygon points="0,0 6,12 -6,12" />
-                <polygon points="13,0 19,12 7,12" />
-                <polygon points="26,0 32,12 20,12" />
-                <polygon points="39,0 45,12 33,12" />
-                <polygon points="52,0 58,12 46,12" />
+              <g
+                transform={`translate(${marks.teeth.x} ${marks.teeth.y}) rotate(${marks.teeth.rot})`}
+                opacity="0.85"
+                fill="#ffffff"
+              >
+                <polygon points="-26,-6 -20,6 -32,6" />
+                <polygon points="-13,-6 -7,6 -19,6" />
+                <polygon points="0,-6 6,6 -6,6" />
+                <polygon points="13,-6 19,6 7,6" />
+                <polygon points="26,-6 32,6 20,6" />
               </g>
 
               {/* Zebrapad vlak voor de slagboom */}
@@ -831,17 +869,21 @@ carState.current.y = pt.y;
                 </g>
               </g>
 
-              {/* LED-looppad naar de ingang (het gebouw zelf is 3D, zie CbrBuilding3D) */}
-              <g transform={`translate(555, ${675 + DY})`}>
+              {/* DESKTOP LED-looppad naar de ingang */}
+              <g transform={`translate(555, ${664 + DY})`}>
                 <path
-                  d="M -48 180 L 42 180"
+                  d="M -22 180 L 22 180"
                   stroke={parked ? LIME : JADE}
                   strokeWidth="3.5"
                   strokeDasharray="6 6"
                   className="tp-led-walk"
                   style={{ filter: parked ? "drop-shadow(0 0 8px #ccff00)" : "none" }}
                 />
-                <polygon points="28,175 38,180 28,185" fill={parked ? LIME : JADE} />
+                <polygon
+                  points="24,174 36,180 24,186"
+                  fill={parked ? LIME : JADE}
+                  style={{ filter: parked ? "drop-shadow(0 0 6px #ccff00)" : "none" }}
+                />
               </g>
               {!USE_3D_CAR && (
                 <g ref={carGRef} style={{ opacity: 0 }}>
@@ -924,120 +966,293 @@ carState.current.y = pt.y;
           </div>
 
           {/* ================= MOBIEL ================= */}
-          <div className="lg:hidden relative pl-12 sm:pl-16 pb-36 space-y-16 max-w-lg mx-auto">
-            <div className="absolute left-5 sm:left-6 top-2 bottom-20 w-1 -translate-x-1/2 bg-white/10">
-              <div className="w-full h-full border-l-2 border-dashed border-white/20" />
-              <motion.div
-                className="absolute top-0 left-0 w-full bg-jade shadow-[0_0_12px_#10b981]"
-                style={{ height: mobileLineHeight }}
-              />
-            </div>
-
+          <div className="lg:hidden relative max-w-md mx-auto">
+            {/* Kaarten-sectie met flinke tussenruimte */}
             <div
               ref={mobLineRef}
-              className="absolute left-5 sm:left-6 top-2 bottom-20 w-0 z-20 pointer-events-none"
+              className="relative pl-16 sm:pl-20 pt-6 pb-12 flex flex-col gap-36 sm:gap-44 z-30"
             >
-              <motion.div
-                className="absolute left-0 -translate-x-1/2 -translate-y-1/2"
-                style={{ top: mobileLineHeight }}
-              >
-                <svg
-                  viewBox="-34 -66 68 132"
-                  className="w-[42px] h-auto overflow-visible"
-                  aria-hidden="true"
-                >
-                  <g transform="rotate(180)">
-                    <AudiA3Top
-                      headlights={headlights}
-                      drive={drive}
-                      parked={parked}
-                      beamStrength={0.35}
-                    />
-                  </g>
-                </svg>
-              </motion.div>
+              {steps.map((step, index) => {
+                const isActive = activeStep >= index + 1;
+                return (
+                  <div
+                    key={step.num}
+                    ref={(el) => {
+                      mobCardRefs.current[index] = el;
+                    }}
+                    className={`relative p-5 sm:p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 ${
+                      isActive
+                        ? "border-jade/70 bg-ink/90 shadow-[0_0_30px_rgba(16,185,129,0.16)]"
+                        : "border-white/10 bg-ink/40 opacity-50"
+                    }`}
+                  >
+                    {isActive && (
+                      <div className="absolute inset-x-6 -top-px h-0.5 bg-gradient-to-r from-transparent via-lime to-transparent" />
+                    )}
+
+                    {step.sticker && (
+                      <motion.div
+                        animate={floatAnimation}
+                        className="absolute -top-7 -right-3 w-16 h-16 sm:w-20 sm:h-20 pointer-events-none drop-shadow-xl z-20"
+                      >
+                        <Image
+                          src={step.sticker}
+                          alt=""
+                          width={160}
+                          height={160}
+                          className="w-full h-auto rotate-12"
+                        />
+                      </motion.div>
+                    )}
+                    <div className="flex items-center gap-3 mb-2.5">
+                      <span
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-display font-extrabold text-sm border transition-all ${
+                          isActive
+                            ? "border-lime bg-lime text-ink shadow-[0_0_15px_rgba(204,255,0,0.45)]"
+                            : "border-jade/40 text-jade bg-ink"
+                        }`}
+                      >
+                        {step.num}
+                      </span>
+                      <div>
+                        <span className="block text-[10px] font-bold uppercase tracking-widest text-jade">
+                          {step.tag}
+                        </span>
+                        <h3 className="font-display font-extrabold text-lg text-paper">
+                          {step.title}
+                        </h3>
+                      </div>
+                    </div>
+                    <p className="text-paper/75 text-sm sm:text-base">{step.desc}</p>
+                  </div>
+                );
+              })}
             </div>
 
-            {steps.map((step, index) => {
-              const isActive = activeStep >= index + 1;
-              return (
-                <div
-                  key={step.num}
-                  ref={(el) => {
-                    mobCardRefs.current[index] = el;
-                  }}
-                  className={`relative p-6 rounded-2xl border transition-all duration-300 ${
-                    isActive
-                      ? "border-jade/60 bg-white/[0.06] shadow-[0_0_25px_rgba(16,185,129,0.12)]"
-                      : "border-white/10 bg-white/[0.02] opacity-50"
-                  }`}
-                >
-                  {step.sticker && (
-                    <motion.div
-                      animate={floatAnimation}
-                      className="absolute -top-8 -right-4 w-20 h-20 pointer-events-none drop-shadow-xl z-20"
-                    >
-                      <Image
-                        src={step.sticker}
-                        alt=""
-                        width={160}
-                        height={160}
-                        className="w-full h-auto rotate-12"
-                      />
-                    </motion.div>
-                  )}
-                  <div className="flex items-center gap-3 mb-3">
-                    <span
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center font-display font-bold text-sm ${
-                        isActive ? "bg-lime text-ink" : "border border-jade text-jade"
-                      }`}
-                    >
-                      {step.num}
-                    </span>
-                    <div>
-                      <span className="block text-[10px] font-bold uppercase tracking-widest text-jade">
-                        {step.tag}
-                      </span>
-                      <h3 className="font-display font-extrabold text-lg text-paper">
-                        {step.title}
-                      </h3>
-                    </div>
-                  </div>
-                  <p className="text-paper/70 text-sm sm:text-base">{step.desc}</p>
-                </div>
-              );
-            })}
+            {/* Compacte spacer zodat de sectie direct onder de KLAAR VOOR CBR badge eindigt */}
+            <div className="h-[115px] sm:h-[145px]" />
 
+            {/* ÉÉN GECENTREERD CANVAS VAN 760 x 1480 (begint links op x=260 zodat koplamplicht nooit afsnijdt) */}
             <div
-              className={`absolute left-5 sm:left-6 bottom-0 h-32 w-[60px] -translate-x-1/2 rounded-b-xl border-2 border-t-0 transition-colors duration-500 ${
-                parked
-                  ? "border-lime bg-jade/15 shadow-[0_0_20px_rgba(204,255,0,0.4)]"
-                  : "border-white/40"
-              }`}
-            />
-            <div className="absolute left-[64px] sm:left-[80px] bottom-4 flex items-center gap-3">
-              <div className="flex items-center gap-3 bg-white/[0.04] border border-white/15 rounded-2xl p-3 backdrop-blur-md">
-                <div className="w-10 h-10 rounded-lg bg-blue-600 border-2 border-white flex items-center justify-center text-white font-extrabold text-xl leading-none shadow-md">
-                  P
-                </div>
-                <div className="bg-white rounded-lg px-2.5 py-1.5 border border-lime shadow-sm">
-                  <Image
-                    src="/cbr-logo.png"
-                    alt="CBR"
-                    width={64}
-                    height={26}
-                    className="h-5 w-auto object-contain"
-                  />
-                </div>
-              </div>
-              <motion.div
-                initial={false}
-                animate={{ opacity: parked ? 1 : 0, scale: parked ? 1 : 0.6 }}
-                transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                className="px-3.5 py-1.5 rounded-full bg-lime text-ink font-display font-extrabold text-xs tracking-wider shadow-[0_0_15px_rgba(204,255,0,0.5)]"
+              className="absolute top-0 -left-16 -right-6 pointer-events-none"
+              style={{ aspectRatio: "760 / 1480" }}
+            >
+              <svg
+                viewBox="260 0 760 1480"
+                className="absolute inset-0 w-full h-full overflow-visible"
+                fill="none"
+                aria-hidden="true"
               >
-                GESLAAGD!
-              </motion.div>
+                <defs>
+                  <radialGradient id="tp-mob-campus-aura" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor={JADE} stopOpacity="0.22" />
+                    <stop offset="65%" stopColor={LIME} stopOpacity="0.05" />
+                    <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+                  </radialGradient>
+                </defs>
+
+                {/* Sfeergloed onder CBR gebouw (+360 naar beneden geschoven) */}
+                <ellipse cx="730" cy="1210" rx="240" ry="175" fill="url(#tp-mob-campus-aura)" />
+
+                {/* De rechte asfaltweg op x=460 van y=45 tot y=1155 */}
+                <path d="M 460 45 L 460 1155" stroke="rgba(16,185,129,0.08)" strokeWidth={70} strokeLinecap="round" />
+                <path d="M 460 45 L 460 1155" stroke="#383c45" strokeWidth={58} strokeLinecap="round" />
+                <path d="M 460 45 L 460 1155" stroke="#14161a" strokeWidth={52} strokeLinecap="round" />
+                <path d="M 460 45 L 460 1155" stroke="rgba(255,255,255,0.28)" strokeWidth={2} strokeDasharray="12 16" />
+
+                {/* Groene neon voortgangslijn midden op de weg (x=460) */}
+                <motion.path
+                  d="M 460 45 L 460 1155"
+                  stroke={JADE}
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  style={{
+                    pathLength: roadProgress,
+                    filter: "drop-shadow(0 0 12px rgba(16, 185, 129, 0.8))",
+                  }}
+                />
+
+                {/* HAAIENTANDEN op de rechte weg */}
+                <g
+                  transform={`translate(440, ${Math.round((mobCps[0] + mobCps[1]) / 2)})`}
+                  opacity="0.85"
+                  fill="#ffffff"
+                >
+                  <polygon points="0,0 4.5,10 -4.5,10" />
+                  <polygon points="10,0 14.5,10 5.5,10" />
+                  <polygon points="20,0 24.5,10 15.5,10" />
+                  <polygon points="30,0 34.5,10 25.5,10" />
+                  <polygon points="40,0 44.5,10 35.5,10" />
+                </g>
+
+                {/* DE 3 CHECKPOINT STIPPEN OP DE WEG (precies ter hoogte van kaart 1, 2 en 3) */}
+                {mobCps.map((cy, i) => {
+                  const reached = activeStep >= i + 1;
+                  return (
+                    <g key={i} transform={`translate(460, ${cy})`}>
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r="12"
+                        fill="#14161a"
+                        stroke={reached ? LIME : "rgba(255,255,255,0.3)"}
+                        strokeWidth="2.5"
+                      />
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r="4.5"
+                        fill={reached ? LIME : "#52525b"}
+                      />
+                    </g>
+                  );
+                })}
+
+                {/* BOMEN LANGS DE MOBIELE WEG (in de open ruimtes tussen de kaarten en links van de baan) */}
+                {[
+                  { x: 392, y: Math.round(mobCps[0] - 55), r: 18 },
+                  { x: 548, y: Math.round((mobCps[0] + mobCps[1]) / 2 - 28), r: 22 },
+                  { x: 582, y: Math.round((mobCps[0] + mobCps[1]) / 2 + 12), r: 15 },
+                  { x: 390, y: Math.round(mobCps[1] + 45), r: 20 },
+                  { x: 406, y: Math.round(mobCps[1] + 82), r: 14 },
+                  { x: 552, y: Math.round((mobCps[1] + mobCps[2]) / 2 - 15), r: 21 },
+                  { x: 388, y: Math.round(mobCps[2] + 65), r: 19 },
+                ].map((tree, idx) => (
+                  <g key={idx} transform={`translate(${tree.x}, ${tree.y})`}>
+                    <circle cx="5" cy="7" r={tree.r} fill="rgba(0,0,0,0.55)" filter="blur(4px)" />
+                    <circle cx="0" cy="0" r={tree.r} fill="#0d261f" stroke="#10b981" strokeWidth="1.5" strokeOpacity="0.45" />
+                    <circle cx="-4" cy="-4" r={tree.r * 0.65} fill="#13382d" />
+                    <circle cx="-6" cy="-6" r={tree.r * 0.3} fill="#10b981" opacity="0.35" />
+                  </g>
+                ))}
+
+                {/* Alles rond het parkeervak 360 eenheden lager zodat kaart 3 helemaal vrij staat */}
+                <g transform="translate(0, 360)">
+                  {/* Zebrapad vlak voor de slagboom */}
+                  <g transform="translate(435, 746)" opacity="0.85" fill="#f4f4f5">
+                    <rect x="0" y="0" width="5.5" height="20" rx="1" />
+                    <rect x="9" y="0" width="5.5" height="20" rx="1" />
+                    <rect x="18" y="0" width="5.5" height="20" rx="1" />
+                    <rect x="27" y="0" width="5.5" height="20" rx="1" />
+                    <rect x="36" y="0" width="5.5" height="20" rx="1" />
+                    <rect x="45" y="0" width="5.5" height="20" rx="1" />
+                  </g>
+
+                  {/* COMPACTER PARKEERVAK P */}
+                  <rect x={408} y={784} width={104} height={158} rx={14} fill="#14161a" stroke="#27272a" strokeWidth="2" />
+                  <rect
+                    x={425}
+                    y={800}
+                    width={70}
+                    height={128}
+                    rx={6}
+                    fill={JADE}
+                    style={{
+                      opacity: parked ? 0.22 : 0.04,
+                      transition: "opacity 400ms ease",
+                    }}
+                  />
+                  <text
+                    x="460"
+                    y="864"
+                    fontFamily="system-ui, sans-serif"
+                    fontWeight="900"
+                    fontSize="26"
+                    fill={parked ? LIME : "rgba(255,255,255,0.14)"}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    style={{ transition: "fill 400ms ease" }}
+                  >
+                    P
+                  </text>
+                  <path
+                    d="M 425 796 L 425 930 L 495 930 L 495 796"
+                    stroke={parked ? LIME : "rgba(255,255,255,0.55)"}
+                    strokeWidth={2.8}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    style={{
+                      transition: "stroke 400ms ease",
+                      filter: parked ? "drop-shadow(0 0 10px rgba(204,255,0,0.85))" : "none",
+                    }}
+                  />
+                  <rect x={445} y={918} width={30} height={5} rx={2.5} fill={parked ? LIME : "#52525b"} />
+
+                  {/* Slagboom */}
+                  <g transform="translate(419, 792)">
+                    <rect x="-6.5" y="-6.5" width="13" height="13" rx="3" fill="#18181b" stroke={gateOpen ? JADE : "#ef4444"} strokeWidth="2" />
+                    <circle cx="0" cy="0" r="2.5" fill={gateOpen ? LIME : "#ef4444"} />
+                    <g
+                      style={{
+                        transform: `rotate(${gateOpen ? -82 : 0}deg)`,
+                        transformOrigin: "0px 0px",
+                        transition: "transform 650ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                      }}
+                    >
+                      <rect x="5" y="-2.2" width="76" height="4.4" rx="2.2" fill="#f4f4f5" />
+                      <rect x="16" y="-2.2" width="10" height="4.4" fill="#ef4444" />
+                      <rect x="38" y="-2.2" width="10" height="4.4" fill="#ef4444" />
+                      <rect x="60" y="-2.2" width="10" height="4.4" fill="#ef4444" />
+                    </g>
+                  </g>
+
+                  {/* MOBIEL LED-looppad van parkeervak naar de 3D CBR-luifel */}
+                  <g>
+                    <path
+                      d="M 516 844 L 568 844"
+                      stroke={parked ? LIME : JADE}
+                      strokeWidth="3"
+                      strokeDasharray="5 5"
+                      className="tp-led-walk"
+                      style={{ filter: parked ? "drop-shadow(0 0 8px #ccff00)" : "none" }}
+                    />
+                    <polygon
+                      points="570,838.5 582,844 570,849.5"
+                      fill={parked ? LIME : JADE}
+                      style={{ filter: parked ? "drop-shadow(0 0 6px #ccff00)" : "none" }}
+                    />
+                  </g>
+
+                  {/* KLAAR VOOR CBR Badge onder het parkeervak */}
+                  <g
+                    style={{
+                      opacity: parked ? 1 : 0,
+                      transform: `translate(460px, ${parked ? 968 : 980}px)`,
+                      transition: "all 400ms cubic-bezier(0.16, 1, 0.3, 1)",
+                    }}
+                  >
+                    <rect x="-86" y="-14" width="172" height="28" rx="14" fill={LIME} className="drop-shadow-[0_0_20px_rgba(204,255,0,0.6)]" />
+                    <text x="0" y="1" fontFamily="Monument Extended, system-ui, sans-serif" fontWeight="800" fontSize="9" fill="#09090b" textAnchor="middle" dominantBaseline="middle" letterSpacing="0.8">
+                      ✓ KLAAR VOOR CBR
+                    </text>
+                  </g>
+                </g>
+              </svg>
+
+              {/* 3D CBR-gebouw: cx=640 matcht exact met viewBox="260 0 760 1480" */}
+              <div className="absolute inset-0 pointer-events-none z-10">
+                <CbrBuilding3D
+                  stateRef={buildingState}
+                  viewH={1480}
+                  offsetY={360}
+                  cx={640}
+                  cz={740}
+                />
+              </div>
+
+              {/* 3D Auto met infade (mobCarWrapRef) en carScale={0.76} */}
+              <div
+                ref={mobCarWrapRef}
+                className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-20"
+                style={{ opacity: 0 }}
+              >
+                <Car3D
+                  stateRef={mobileCarState}
+                  logoSrc={LOGO_SRC}
+                  carScale={0.76}
+                  focus={{ cx: 640, cz: 740, viewH: 1480 }}
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -155,7 +155,7 @@ export default function PackageDropdown({ packages }: { packages: DropdownPackag
             {packages.map((item) => (
               <Link
                 key={item.id}
-                href={`/#${item.id}`}
+                href={`/checkout?pakket=${item.id.replace(/^pakket-/, "")}`}
                 onClick={() => setOpen(false)}
                 className={`group/card flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime sm:px-5 ${
                   item.featured
